@@ -1,1 +1,0 @@
-# quantum-statistics-solver
