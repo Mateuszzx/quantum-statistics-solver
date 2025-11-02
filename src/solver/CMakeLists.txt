@@ -1,3 +1,4 @@
 target_sources(qss_library PRIVATE
-  solver.cpp
+  brent_solver.cpp
+  expansion_bracketer.cpp
 )

@@ -21,7 +21,7 @@ double fd_distribution(double e_k, double mu, double beta) noexcept {
   return fd_from_x(beta * (e_k - mu));
 }
 
-void fd_distribution(const double* ek, std::size_t size,
+void fd_distribution_into(const double* ek, std::size_t size,
                           double mu, double beta, double* out) {
 #if defined(_OPENMP)
   #pragma omp parallel for schedule(static) if(size >= QSS_OMP_THRESHOLD)

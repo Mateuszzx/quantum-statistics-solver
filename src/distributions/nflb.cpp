@@ -27,7 +27,7 @@ double nflb_distribution(double e_k, double mu, double beta) noexcept {
   return nflb_from_x(beta * (e_k - mu));
 }
 
-void nflb_distribution(const double* ek, std::size_t size,
+void nflb_distribution_into(const double* ek, std::size_t size,
                             double mu, double beta, double* out) {
 #if defined(_OPENMP)
   #pragma omp parallel for schedule(static) if(size >= QSS_OMP_THRESHOLD)
