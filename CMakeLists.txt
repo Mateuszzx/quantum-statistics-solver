@@ -16,7 +16,7 @@ if (PROJECT_IS_TOP_LEVEL)
   option(ENABLE_TESTING "Enable unit tests" ON)
   option(ENABLE_WARNINGS "Enable compiler warnings" ON)
   option(ENABLE_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
-  option(ENABLE_OPENMP "Enable OpenMP acceleration" OFF)
+  option(ENABLE_OPENMP "Enable OpenMP acceleration" ON)
   option(ENABLE_PY_MODULE "Build Python extension (requires Python dev)" OFF)
   option(ENABLE_IPO "Enable interprocedural optimization (LTO) for Release" OFF)
 endif()
@@ -37,7 +37,6 @@ endif()
 
 if (ENABLE_OPENMP)
   find_package(OpenMP REQUIRED)
-  target_link_libraries(qss_library PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 

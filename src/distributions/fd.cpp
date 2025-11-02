@@ -1,27 +1,34 @@
 #include <cmath>
-#include "qss/distributions.hpp"
-#include "qss/math_utils.hpp"
+#include "impl.hpp"
+#include "qss/types.hpp"
+#include "../config.hpp"   // QSS_OMP_THRESHOLD
 
-namespace qss {
+namespace qss::detail {
 
-double fd_distribution(double e_k, double mu, double beta) {
-  const double x = beta * (e_k - mu);
+inline constexpr double FD_SPIN = 2.0;
+
+namespace {
+inline double fd_from_x(double x) noexcept {
   if (x > UP_EXP_LIMIT)   return 0.0;
-  if (x < DOWN_EXP_LIMIT) return 2.0;
-  return 2.0 * math::logistic_neg(x); // spin factor 2
+  if (x < DOWN_EXP_LIMIT) return FD_SPIN;
+  if (x >= 0.0) return FD_SPIN / (1.0 + std::exp(x));
+  const double ex = std::exp(-x);
+  return FD_SPIN * ex / (1.0 + ex);
+}
+} // namespace
+
+double fd_distribution(double e_k, double mu, double beta) noexcept {
+  return fd_from_x(beta * (e_k - mu));
 }
 
-Vec fd_distribution(const Vec& e_k, double mu, double beta) {
-  std::vector<double> x; x.reserve(e_k.size());
-  for (double ek : e_k) x.push_back(beta * (ek - mu));
-  Vec out;
-  math::saturating_map(
-    x, UP_EXP_LIMIT, DOWN_EXP_LIMIT,
-    /*big+*/ 0.0, /*big-*/ 2.0,
-    [](double xi){ return 2.0 * math::logistic_neg(xi); },
-    out
-  );
-  return out;
+void fd_distribution(const double* ek, std::size_t size,
+                          double mu, double beta, double* out) {
+#if defined(_OPENMP)
+  #pragma omp parallel for schedule(static) if(size >= QSS_OMP_THRESHOLD)
+#endif
+  for (std::size_t i = 0; i < size; ++i) {
+    out[i] = fd_from_x(beta * (ek[i] - mu));
+  }
 }
 
-} // namespace qss
+} // namespace qss::detail

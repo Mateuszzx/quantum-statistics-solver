@@ -2,56 +2,39 @@
 #include <tuple>
 #include "qss/distributions.hpp"
 #include "qss/math_utils.hpp"
+#include "impl.hpp"  // <- private kernels
 
 namespace qss {
 
-// Dispatcher (scalar)
+// Scalar dispatcher
 std::optional<double> distribution(double e_k, double mu, double beta, DistType dist) {
+  using namespace qss::detail;
   switch (dist) {
-    case DistType::FD:    return fd_distribution(e_k, mu, beta);
-    case DistType::FLB:   return flb_distribution(e_k, mu, beta);
-    case DistType::NFL:   return nfl_distribution(e_k, mu, beta);
-    case DistType::NFL_i: return nfl_i_distribution(e_k, mu, beta);
-    default:              return std::nullopt;
+    case DistType::FD:      return fd_distribution   (e_k, mu, beta);
+    case DistType::FLB:     return flb_distribution  (e_k, mu, beta);
+    case DistType::NFLB:    return nflb_distribution (e_k, mu, beta);
+    case DistType::NFLB_i:  return nflb_i_distribution(e_k, mu, beta);
+    default:                return std::nullopt;
   }
 }
 
-// Dispatcher (vector)
+// Vector dispatcher (returns Vec)
 std::optional<Vec> distribution(const Vec& e_k, double mu, double beta, DistType dist) {
+  using namespace qss::detail;
+  const std::size_t n = e_k.size();
+  Vec out(n);
+
   switch (dist) {
-    case DistType::FD:    return fd_distribution(e_k, mu, beta);
-    case DistType::FLB:   return flb_distribution(e_k, mu, beta);
-    case DistType::NFL:   return nfl_distribution(e_k, mu, beta);
-    case DistType::NFL_i: return nfl_i_distribution(e_k, mu, beta);
-    default:              return std::nullopt;
-  }
-}
-
-// 2D symmetry: (1/(2π)) * |e_k| * f(e_k)
-Mat distribution_symmetry_2d(const Mat& e_k, double mu, double beta, DistType dist) {
-  const std::size_t rows = e_k.size();
-  const std::size_t cols = rows ? e_k[0].size() : 0;
-  Mat out = math::make_empty_mat(rows, cols);
-  const double pref = 1.0 / (2.0 * PI);
-
-  for (std::size_t j = 0; j < rows; ++j) {
-    for (std::size_t i = 0; i < cols; ++i) {
-      const double ek = e_k[j][i];
-      double val = 0.0;
-      switch (dist) {
-        case DistType::FD:    val = fd_distribution(ek, mu, beta); break;
-        case DistType::FLB:   val = flb_distribution(ek, mu, beta); break;
-        case DistType::NFL:   val = nfl_distribution(ek, mu, beta); break;
-        case DistType::NFL_i: val = nfl_i_distribution(ek, mu, beta); break;
-        default:              val = 0.0; break;
-      }
-      out[j][i] = pref * std::abs(ek) * val;
-    }
+    case DistType::FD:      fd_distribution    (e_k.data(), n, mu, beta, out.data()); break;
+    case DistType::FLB:     flb_distribution   (e_k.data(), n, mu, beta, out.data()); break;
+    case DistType::NFLB:    nflb_distribution  (e_k.data(), n, mu, beta, out.data()); break;
+    case DistType::NFLB_i:  nflb_i_distribution(e_k.data(), n, mu, beta, out.data()); break;
+    default: return std::nullopt;
   }
   return out;
 }
 
-// 2D lattice preparation
+// 2D lattice preparation (unchanged)
 std::tuple<Mat, Mat, Mat> prepare_2D_lattice_data(const Vec& kx, const Vec& ky,
                                                   double t, double t_prim) {
   const std::size_t nx = kx.size(), ny = ky.size();
