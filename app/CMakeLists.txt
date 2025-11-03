@@ -14,8 +14,10 @@ if (TARGET project_warnings)
 endif()
 
 
-# Install the binary when building this project standalone
-if (PROJECT_IS_TOP_LEVEL)
+# Install the CLI only when explicitly requested. By default OFF to avoid
+# writing into system locations like /usr/local/bin when using `cmake --install .`.
+option(QSS_INSTALL_CLI "Install the qss_cli executable" OFF)
+if (PROJECT_IS_TOP_LEVEL AND QSS_INSTALL_CLI)
   include(GNUInstallDirs)
   install(TARGETS qss_cli
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

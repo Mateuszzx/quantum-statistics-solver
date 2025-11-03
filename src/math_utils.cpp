@@ -21,7 +21,7 @@ double mean_abs_2d(const Mat& z, const Vec& kx, const Vec& ky) {
   long double sum = 0.0L;
   for (std::size_t j = 0; j < ny; ++j)
     for (std::size_t i = 0; i < nx; ++i)
-      sum += std::fabsl(static_cast<long double>(z[j][i]));
+      sum += std::fabs(static_cast<long double>(z[j][i]));
 
   return static_cast<double>(sum / static_cast<long double>(kx.size() * ky.size()));
 }

@@ -1,4 +1,3 @@
-# src/CMakeLists.txt
 add_library(qss_library)
 add_library(QSS::library ALIAS qss_library)
 
@@ -45,7 +44,7 @@ target_sources(qss_library PRIVATE
 add_subdirectory(chemical_potential)
 add_subdirectory(distributions)
 add_subdirectory(solver)
-# add_subdirectory(bindings)  # when you add the py module
+add_subdirectory(bindings)
 
 if (ENABLE_OPENMP AND OpenMP_CXX_FOUND)
   target_link_libraries(qss_library PRIVATE OpenMP::OpenMP_CXX)
