@@ -16,7 +16,7 @@ endif()
 
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
 if (ENABLE_WARNINGS)
   include(Warnings)
 endif()
@@ -39,11 +39,13 @@ if (ENABLE_PY_MODULE)
   cmake_policy(SET CMP0148 NEW)
   find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
   add_subdirectory(ext/nanobind)
+
   # Detect the installed nanobind package and import it into CMake
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
     OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
-  find_package(nanobind CONFIG REQUIRED)
+
+    find_package(nanobind CONFIG REQUIRED)
 
 endif()
 

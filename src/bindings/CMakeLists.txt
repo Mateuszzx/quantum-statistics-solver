@@ -105,4 +105,3 @@ if (QSS_INSTALL_TO_VENV)
   endif()
 endif()
 
-
