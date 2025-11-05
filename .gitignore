@@ -147,3 +147,5 @@ ipch/
 tags
 .venv
 .vscode
+*.pyc
+__pycache__/

@@ -19,10 +19,9 @@ endif()
 # ---- Sources ----
 # List your binding sources here. Only existing files will be added.
 set(QSS_PY_SOURCES
-  module.cpp
-  chemical_potential_bindings.cpp
-  distributions_bindings.cpp
-  solver_bindings.cpp
+  module_main.cpp
+  module_chemical_potential.cpp
+  module_distributions.cpp
 )
 
 set(_existing)

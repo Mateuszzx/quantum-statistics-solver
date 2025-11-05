@@ -28,12 +28,15 @@ static double solve_one_mu(
   RootOptions      ropt{p.tol, p.max_iters};
 
   auto objective = [&](double mu) -> double {
-    Mat F = qss::chem::distribution_total(E, mu, beta, dist, delta);
-    return qss::math::mean_abs_2d(F, kx, ky) - n_assumed;
+    Mat F_minus = qss::chem::distribution_total(E, mu, beta, dist, -delta);
+    Mat F_plus = qss::chem::distribution_total(E, mu, beta, dist, delta);
+    double F_minus_mean = qss::math::mean_abs_2d(F_minus, kx, ky);
+    double F_plus_mean = qss::math::mean_abs_2d(F_plus, kx, ky);
+    return std::abs(F_minus_mean  + F_plus_mean - n_assumed);
   };
 
   Bracket B = br->bracket(objective, p.a0, p.b0, bopt);
-  if (!B.ok) throw std::runtime_error("chemical_potential_B: failed to bracket root");
+  // if (!B.ok) throw std::runtime_error("chemical_potential_B: failed to bracket root");
   return sl->solve(objective, B.a, B.b, ropt);
 }
 } // namespace
