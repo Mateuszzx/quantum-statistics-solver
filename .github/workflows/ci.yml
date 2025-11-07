@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-linux:
+    name: Test on Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build lcov
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Build C++
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_COVERAGE=ON \
+            -DCMAKE_CXX_FLAGS="--coverage -O0 -g"
+          cmake --build build -j$(nproc)
+
+      - name: Run tests with coverage
+        run: |
+          # C++ tests
+          cd build && ctest --output-on-failure
+          cd ..
+
+          # Python tests with coverage
+          python -m coverage run -m pytest tests/python/ -v
+          python -m coverage xml -o build/coverage/coverage.xml
+          python -m coverage report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./build/coverage/coverage.xml
+          flags: python-${{ matrix.python-version }}
+          name: Python-${{ matrix.python-version }}
+          fail_ci_if_error: false

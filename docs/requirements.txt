@@ -1,0 +1,5 @@
+sphinx>=7.2
+furo
+breathe>=4.35.0
+myst-parser
+sphinx-autodoc-typehints

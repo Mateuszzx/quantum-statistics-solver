@@ -34,19 +34,36 @@ endforeach()
 # Option to enable CPython limited (stable) ABI
 option(QSS_STABLE_ABI "Build Python module with CPython limited/stable ABI" OFF)
 
-set(_nb_args MODULE NB_STATIC)         # Static self-contained extension
+# Don't pass 'MODULE' here; nanobind_add_module creates a MODULE library internally.
+set(_nb_args NB_STATIC)
 if (QSS_STABLE_ABI)
   list(APPEND _nb_args STABLE_ABI)
 endif()
 
 # ---- Build the nanobind module ----
-nanobind_add_module(qss
-  ${_nb_args}
+nanobind_add_module(
+  _qss  # Changed from 'qss' to '_qss'
+  STABLE_ABI
+  NB_STATIC
   ${_existing}
 )
 
+# Link against the core library
+target_link_libraries(_qss PRIVATE qss_core)
+
+# Set output name and properties
+set_target_properties(_qss PROPERTIES
+  OUTPUT_NAME "_qss"  # Changed from 'qss' to '_qss'
+  CXX_VISIBILITY_PRESET hidden
+)
+
+# Install the extension
+if(NOT SKBUILD_STATE STREQUAL "editable")
+  install(TARGETS _qss LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss)
+endif()
+
 # Language / warnings / includes
-set_target_properties(qss PROPERTIES
+set_target_properties(_qss PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
   POSITION_INDEPENDENT_CODE ON
@@ -54,17 +71,30 @@ set_target_properties(qss PROPERTIES
   VISIBILITY_INLINES_HIDDEN YES
 )
 
-target_include_directories(qss PRIVATE
+target_include_directories(_qss PRIVATE
   ${PROJECT_SOURCE_DIR}/include
 )
 
 # Link against your core library (which already pulls OpenMP if enabled)
-target_link_libraries(qss PRIVATE QSS::library)
+target_link_libraries(_qss PRIVATE QSS::library Python::Python)
+
+
+# Ensure coverage runtime resolves when linking the shared module
+if (ENABLE_COVERAGE)
+  target_link_libraries(_qss PRIVATE gcov)  # provides __gcov_* symbols
+  target_link_options(_qss PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+endif()
+
+# Fail fast on missing symbols (GNU/Clang)
+# Keep this now that we link libpython
+target_link_options(_qss PRIVATE
+  $<$<CXX_COMPILER_ID:GNU,Clang>:-Wl,--no-undefined>
+)
 
 # ----------------------------------------------------------------------------
 # Developer convenience: drop the built extension into a predictable folder
 # so it's easy to import from the build tree (add build/python to PYTHONPATH).
-set_target_properties(qss PROPERTIES
+set_target_properties(_qss PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python
 )
@@ -92,7 +122,7 @@ if (QSS_INSTALL_TO_VENV)
     if (QSS_PY_SITE)
       message(STATUS "qss: will install Python extension to ${QSS_PY_SITE}")
       # Absolute DESTINATION is allowed; handle both ELF/.so (LIBRARY) and Windows .pyd (RUNTIME)
-      install(TARGETS qss
+      install(TARGETS _qss
         LIBRARY DESTINATION "${QSS_PY_SITE}"
         RUNTIME DESTINATION "${QSS_PY_SITE}"
       )
@@ -103,4 +133,3 @@ if (QSS_INSTALL_TO_VENV)
     message(WARNING "qss: Python_EXECUTABLE not known; skipping install to venv. Set -DPython_EXECUTABLE or enable Python::Interpreter.")
   endif()
 endif()
-

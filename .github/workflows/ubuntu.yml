@@ -1,45 +1,171 @@
-name: Ubuntu CI Test
+name: CI Ubuntu
 
 on:
   push:
-    branches: [ main, master, dev ]
+    branches: ["**"]
   pull_request:
-    branches: [ main, master, dev ]
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ubuntu-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        build-type: ["Debug", "Release"]
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: "4"
+      VENV_DIR: .venv
+      BUILD_TYPE: ${{ matrix.build-type }}
     steps:
-    - uses: actions/checkout@v2
-    - name: install
-      run: |
-        pip install --user -U gcovr
-    - name: prepare
-      run: |
-        make prepare
-    - name: configure
-      run: |
-        cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On
-    - name: building and testing
-      run: |
-        cmake --build build --config Debug --target coverage -j4
-        cd build
-        ctest .
-    - name: Code Coverage Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: build/coverage/coverage.cobertura.xml
-        badge: true
-        fail_below_min: true
-        format: markdown
-        hide_branch_rate: false
-        hide_complexity: true
-        indicators: true
-        output: both
-        thresholds: '60 80'
-    - name: Add Coverage PR Comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      if: github.event_name == 'pull_request'
-      with:
-        recreate: true
-        path: code-coverage-results.md
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+          cache: pip
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends libgsl-dev
+
+      - name: Create venv and install deps
+        run: |
+          python -m venv "${VENV_DIR}"
+          "${VENV_DIR}/bin/python" -m pip install -U pip wheel build pytest nanobind numpy
+          if [ -f requirements-test.txt ]; then
+            "${VENV_DIR}/bin/python" -m pip install -r requirements-test.txt || true
+          fi
+
+      - name: Make helper scripts executable
+        run: |
+          chmod +x scripts/*.sh
+
+      - name: Configure
+        run: |
+          ./scripts/configure.sh "${BUILD_TYPE}"
+
+      - name: Build
+        run: |
+          ./scripts/build.sh "${BUILD_TYPE}"
+
+      - name: Inspect built module
+        run: |
+          echo "Listing built qss module(s):"
+          find .venv -name "qss*.so" -print
+          for so in $(find .venv -name "qss*.so"); do
+            echo "::group::ldd $so"
+            ldd "$so" || true
+            echo "::endgroup::"
+          done
+
+      - name: Test
+        run: |
+          ./scripts/test.sh "${BUILD_TYPE}"
+
+      - name: Build wheel
+        run: |
+          ./scripts/wheel.sh
+
+      - name: Wheel install smoke test
+        run: |
+          python -m venv wheeltest
+          wheeltest/bin/python -m pip install -U pip
+          WHL="$(ls dist/qss-*.whl | head -n1)"
+          wheeltest/bin/python -m pip install "$WHL"
+          wheeltest/bin/python -c "import qss; print('Wheel import OK:', qss.__file__)"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qss-ubuntu-py${{ matrix.python-version }}-${{ matrix.build-type }}
+          path: |
+            build/${{ matrix.build-type }}/python/**
+            dist/*.whl
+          if-no-files-found: warn
+
+  build-test-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        build-type: ["Release"]
+    env:
+      VENV_DIR: .venv
+      BUILD_TYPE: ${{ matrix.build-type }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Create venv and install deps
+        shell: bash
+        run: |
+          python -m venv "${VENV_DIR}"
+          if [[ -x "${VENV_DIR}/Scripts/python.exe" ]]; then PY="${VENV_DIR}/Scripts/python.exe"; else PY="${VENV_DIR}/bin/python"; fi
+          "${PY}" -m pip install -U pip wheel build pytest nanobind numpy
+
+      - name: Make helper scripts executable
+        shell: bash
+        run: chmod +x scripts/*.sh
+
+      - name: Configure
+        shell: bash
+        run: ./scripts/configure.sh "${BUILD_TYPE}"
+
+      - name: Build
+        shell: bash
+        run: ./scripts/build.sh "${BUILD_TYPE}"
+
+      - name: Test
+        shell: bash
+        run: ./scripts/test.sh "${BUILD_TYPE}"
+
+      - name: Build wheel
+        shell: bash
+        run: ./scripts/wheel.sh
+
+      - name: Wheel smoke test
+        shell: bash
+        run: |
+          python -m venv wheeltest
+          WT_PY="wheeltest/Scripts/python.exe"
+          "$WT_PY" -m pip install -U pip
+          WHL=$(ls dist/qss-*.whl | head -n1)
+          "$WT_PY" -m pip install "$WHL"
+          "$WT_PY" -c "import qss; print('Wheel import OK:', qss.__file__)"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qss-windows-py${{ matrix.python-version }}-${{ matrix.build-type }}
+          path: dist/*.whl
+          if-no-files-found: warn

@@ -1,16 +1,84 @@
+# Pre-commit hooks configuration
 fail_fast: false
+
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: check-json
-        exclude: .vscode
+        exclude: \.vscode/.*\.json$
+      - id: check-toml
       - id: end-of-file-fixer
+        exclude: ^(\.patch|\.diff)$
       - id: trailing-whitespace
+        exclude: ^(\.patch|\.diff)$
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: detect-private-key
 
--   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 'v16.0.2'
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.4
     hooks:
       - id: clang-format
-        exclude_types: [javascript, json]
+        types_or: [c++, c]
+        files: \.(cpp|hpp|h|c|cc|cxx)$
+        exclude: ^tools/
+
+  # Python: General formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^qss/.*\.py$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^(tools|tests|notebooks)/
+      - id: ruff-format
+        exclude: ^(tools|tests|notebooks)/
+
+  # Python: Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [numpy, pandas, types-setuptools]
+        files: ^qss/.*\.py$
+
+  # Spell checking
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: [--ignore-words-list=nd,te,ony,reuse]
+        exclude: '\.ipynb$'
+
+  # Python: docstring coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--fail-under=50, --verbose]
+        files: ^qss/.*\.py$
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml, -r, qss/]
+        additional_dependencies: ["bandit[toml]"]
+
+ci:
+  autofix_prs: true
+  autoupdate_schedule: weekly

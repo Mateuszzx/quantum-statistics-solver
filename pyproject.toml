@@ -1,0 +1,303 @@
+# ==============================================================================
+# Quantum Statistics Solver - Python Package Configuration
+# ==============================================================================
+# This file configures the Python package build, dependencies, and tooling.
+# Uses scikit-build-core for building C++ extensions with nanobind.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Build System Configuration
+# ------------------------------------------------------------------------------
+# scikit-build-core: Modern Python build system for C++ extensions
+# nanobind: Lightweight C++/Python binding library (successor to pybind11)
+
+[build-system]
+requires = ["scikit-build-core", "nanobind"]
+build-backend = "scikit_build_core.build"
+
+# ------------------------------------------------------------------------------
+# Project Metadata
+# ------------------------------------------------------------------------------
+
+[project]
+name = "quantum-statistics-solver"
+version = "0.1.0"
+description = "A library for quantum statistics calculations"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+license = { text = "MIT" }
+keywords = ["quantum", "statistics", "physics", "fermi-dirac", "bose-einstein"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+# Runtime dependencies (minimal, required for package to work)
+dependencies = [
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+]
+
+# ------------------------------------------------------------------------------
+# Optional Dependencies
+# ------------------------------------------------------------------------------
+# Install with: pip install quantum-statistics-solver[dev]
+#           or: pip install -e ".[dev,test,docs]"
+
+[project.optional-dependencies]
+# Test dependencies (pytest and coverage tools)
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",  # parallel test execution
+]
+
+# Development dependencies (linting, formatting, type checking)
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",
+    "black>=23.0.0",         # code formatter
+    "ruff>=0.1.0",           # fast linter
+    "mypy>=1.5.0",           # type checker
+    "codespell>=2.2.0",      # spell checker
+    "types-setuptools",      # type stubs
+    "pre-commit>=3.0.0",     # git hooks
+]
+
+# Documentation dependencies (Sphinx and extensions)
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "breathe>=4.35.0",        # Doxygen integration
+    "myst-parser>=2.0.0",     # Markdown support
+    "sphinx-copybutton>=0.5.0",
+]
+
+# ------------------------------------------------------------------------------
+# Pytest Configuration
+# ------------------------------------------------------------------------------
+# Run tests with: pytest
+# Run with coverage: pytest --cov=qss --cov-report=html
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",                    # verbose output
+    "--tb=short",            # shorter traceback format
+    "--strict-markers",      # error on unknown markers
+    "--disable-warnings",    # cleaner output
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+# ------------------------------------------------------------------------------
+# Coverage Configuration
+# ------------------------------------------------------------------------------
+# Used by pytest-cov and coverage.py
+# Reports uploaded to Codecov in CI (see: codecov.yml, .github/workflows/)
+
+[tool.coverage.run]
+source = ["qss"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+branch = true  # measure branch coverage
+
+[tool.coverage.report]
+show_missing = true  # show line numbers of missing coverage
+skip_empty = true    # skip files with no executable code
+precision = 2        # decimal precision for percentages
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@overload",
+]
+
+[tool.coverage.html]
+directory = "build/coverage/python"
+
+# ------------------------------------------------------------------------------
+# Black Configuration (Code Formatter)
+# ------------------------------------------------------------------------------
+# Format code with: black qss/ tests/
+# Check formatting: black --check qss/
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# ------------------------------------------------------------------------------
+# Ruff Configuration (Fast Linter)
+# ------------------------------------------------------------------------------
+# Ruff replaces: flake8, isort, pyupgrade, pydocstyle, and more
+# Lint code with: ruff check qss/
+# Auto-fix: ruff check --fix qss/
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+extend-exclude = ["tools", "notebooks"]
+
+[tool.ruff.lint]
+# Select rules to enable (see: https://docs.astral.sh/ruff/rules/)
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "B",   # flake8-bugbear (common bugs)
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade (modernize code)
+    "N",   # pep8-naming
+    "ANN", # flake8-annotations (type hints)
+    "S",   # flake8-bandit (security)
+    "SIM", # flake8-simplify
+    "PT",  # flake8-pytest-style
+    "RET", # flake8-return
+    "ARG", # flake8-unused-arguments
+    "ERA", # eradicate (commented-out code)
+    "PL",  # pylint
+    "RUF", # ruff-specific rules
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",    # line too long (handled by black)
+    "ANN101",  # missing type annotation for self
+    "ANN102",  # missing type annotation for cls
+    "S101",    # use of assert (needed for pytest)
+    "COM812",  # trailing comma (conflicts with formatter)
+    "ISC001",  # implicit string concat (conflicts with formatter)
+]
+
+# Per-file rule configuration
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401",    # unused imports (re-exports)
+    "F403",    # star imports (C++ bindings)
+    "SIM105",  # use contextlib.suppress (unnecessary for try/except ImportError)
+]
+"qss/*.py" = [
+    "N802",    # allow prepare_2D_lattice_data (not camelCase)
+    "N803",    # allow H_a (physics notation)
+    "N806",    # allow KX, KY, ND, NN (physics notation)
+    "PLR2004", # allow magic value 4 (4D array check)
+]
+"tests/**/*.py" = [
+    "S101",    # allow assert in tests
+    "ANN",     # no type annotations in tests
+    "PLR2004", # allow magic values in tests
+    "ARG",     # allow unused args (fixtures)
+    "N806",    # allow uppercase vars
+    "PT006",   # allow string in parametrize
+]
+"notebooks/**/*.ipynb" = [
+    "ERA001",  # allow commented code in notebooks
+    "N816",    # allow mixedCase in notebooks
+]
+"tools/**/*.py" = [
+    "S", "E722", "PLR", "ANN", "PTH", "UP", "BLE", "B",  # legacy vendored code
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["qss"]
+force-sort-within-sections = true
+
+# ------------------------------------------------------------------------------
+# Mypy Configuration (Type Checker)
+# ------------------------------------------------------------------------------
+# Check types with: mypy qss/
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+strict_optional = true
+show_error_codes = true
+pretty = true
+exclude = ["tools/", "build/", "dist/", "tests/"]
+
+# Type stubs for third-party libraries
+[[tool.mypy.overrides]]
+module = ["nanobind.*", "pandas.*"]
+ignore_missing_imports = true
+
+# ------------------------------------------------------------------------------
+# Codespell Configuration (Spell Checker)
+# ------------------------------------------------------------------------------
+# Check spelling: codespell qss/
+# Auto-fix: codespell -w qss/
+
+[tool.codespell]
+skip = '*.git,*.egg-info,*.pyc,build,dist,.venv,__pycache__,*.ipynb'
+ignore-words-list = 'nd,te,ony,reuse'  # technical terms to ignore
+
+# ------------------------------------------------------------------------------
+# Bandit Configuration (Security Checker)
+# ------------------------------------------------------------------------------
+# Check security: bandit -r qss/
+
+[tool.bandit]
+exclude_dirs = ["tests", "build", "dist", ".venv", "tools"]
+skips = ["B101", "B404", "B603"]  # allow assert, subprocess
+
+# ------------------------------------------------------------------------------
+# Interrogate Configuration (Docstring Coverage)
+# ------------------------------------------------------------------------------
+# Check docstrings: interrogate qss/
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-nested-classes = true
+fail-under = 50
+exclude = ["setup.py", "docs", "build", "tests", "tools"]
+verbose = 1
+color = true
+
+# ==============================================================================
+# End of Configuration
+# ==============================================================================

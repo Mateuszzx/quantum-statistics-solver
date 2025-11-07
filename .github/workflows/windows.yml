@@ -1,24 +1,94 @@
-name: Windows CI Test
+name: Windows
 
 on:
   push:
-    branches: [ main, master, dev ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master, dev ]
+    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        build-type: [Release]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov numpy pandas
+          pip install scikit-build-core nanobind
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -DENABLE_PY_MODULE=ON `
+            -DBUILD_TESTING=ON `
+            -DBUILD_DOCS=OFF
+
+      - name: Build C++ library
+        run: cmake --build build --config ${{ matrix.build-type }} -j 4
+
+      - name: Run C++ tests
+        working-directory: build
+        run: ctest -C ${{ matrix.build-type }} --output-on-failure -j 4
+
+      - name: Install Python package
+        run: pip install -e .
+
+      - name: Run Python tests
+        run: pytest tests/python/ -v --cov=qss --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: windows
+          name: windows-py${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  build-mingw:
+    name: Build with MinGW
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: prepare
-      run: |
-        make prepare
-    - name: configure
-      run: |
-        cmake -H"." -Bbuild -T host=x86 -A x64 -DCMAKE_BUILD_TYPE="Debug"
-    - name: building and testing
-      run: |
-        cmake --build build --config Debug
-        cd build
-        ctest .
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
+
+      - name: Build with MinGW
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j 4
+          ctest --test-dir build --output-on-failure

@@ -34,8 +34,6 @@ Compilation database setup:
 http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html
 """
 
-from __future__ import print_function
-
 import argparse
 import glob
 import json
@@ -62,13 +60,11 @@ def strtobool(val):
     val = val.lower()
     if val in ["", "true", "1"]:
         return True
-    elif val in ["false", "0"]:
+    if val in ["false", "0"]:
         return False
 
     # Return ArgumentTypeError so that argparse does not substitute its own error message
-    raise argparse.ArgumentTypeError(
-        "'{}' is invalid value for boolean argument! Try 0 or 1.".format(val)
-    )
+    raise argparse.ArgumentTypeError(f"'{val}' is invalid value for boolean argument! Try 0 or 1.")
 
 
 def find_compilation_database(path):
@@ -152,7 +148,7 @@ def merge_replacement_files(tmpdir, mergefile):
     mergekey = "Diagnostics"
     merged = []
     for replacefile in glob.iglob(os.path.join(tmpdir, "*.yaml")):
-        content = yaml.safe_load(open(replacefile, "r"))
+        content = yaml.safe_load(open(replacefile))
         if not content:
             continue  # Skip empty files.
         merged.extend(content.get(mergekey, []))
@@ -175,21 +171,13 @@ def find_binary(arg, name, build_path):
     if arg:
         if shutil.which(arg):
             return arg
-        else:
-            raise SystemExit(
-                "error: passed binary '{}' was not found or is not executable".format(
-                    arg
-                )
-            )
+        raise SystemExit(f"error: passed binary '{arg}' was not found or is not executable")
 
     built_path = os.path.join(build_path, "bin", name)
     binary = shutil.which(name) or shutil.which(built_path)
     if binary:
         return binary
-    else:
-        raise SystemExit(
-            "error: failed to find {} in $PATH or at {}".format(name, built_path)
-        )
+    raise SystemExit(f"error: failed to find {name} in $PATH or at {built_path}")
 
 
 def apply_fixes(args, clang_apply_replacements_binary, tmpdir):
@@ -226,9 +214,7 @@ def run_tidy(args, clang_tidy_binary, tmpdir, build_path, queue, lock, failed_fi
             args.plugins,
         )
 
-        proc = subprocess.Popen(
-            invocation, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        proc = subprocess.Popen(invocation, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, err = proc.communicate()
         if proc.returncode != 0:
             if proc.returncode < 0:
@@ -255,9 +241,7 @@ def main():
         action="store_true",
         help="allow alpha checkers from " "clang-analyzer.",
     )
-    parser.add_argument(
-        "-clang-tidy-binary", metavar="PATH", help="path to clang-tidy binary"
-    )
+    parser.add_argument("-clang-tidy-binary", metavar="PATH", help="path to clang-tidy binary")
     parser.add_argument(
         "-clang-apply-replacements-binary",
         metavar="PATH",
@@ -353,9 +337,7 @@ def main():
         default=[],
         help="Additional argument to prepend to the compiler " "command line.",
     )
-    parser.add_argument(
-        "-quiet", action="store_true", help="Run clang-tidy in quiet mode"
-    )
+    parser.add_argument("-quiet", action="store_true", help="Run clang-tidy in quiet mode")
     parser.add_argument(
         "-load",
         dest="plugins",
@@ -414,9 +396,7 @@ def main():
 
     # Load the database and extract all files.
     database = json.load(open(os.path.join(build_path, db_path)))
-    files = set(
-        [make_absolute(entry["file"], entry["directory"]) for entry in database]
-    )
+    files = set([make_absolute(entry["file"], entry["directory"]) for entry in database])
 
     max_task = args.j
     if max_task == 0:

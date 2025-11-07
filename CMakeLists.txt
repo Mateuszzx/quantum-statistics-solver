@@ -4,19 +4,22 @@ project(quantum-statistics-solver
   VERSION 1.0.0
   LANGUAGES CXX)
 
-
-if (PROJECT_IS_TOP_LEVEL)
-  option(ENABLE_TESTING "Enable unit tests" ON)
-  option(ENABLE_WARNINGS "Enable compiler warnings" ON)
-  option(ENABLE_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
-  option(ENABLE_OPENMP "Enable OpenMP acceleration" ON)
-  option(ENABLE_PY_MODULE "Build Python extension (requires Python dev)" ON)
-  option(ENABLE_IPO "Enable interprocedural optimization (LTO) for Release" OFF)
+# mark top-level project so options are defined
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(PROJECT_IS_TOP_LEVEL TRUE)
 endif()
 
+# make coverage option available at configure time
+option(ENABLE_COVERAGE "Enable coverage report target" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
+
+# If coverage requested, include helper early so flags apply to all targets
+if (ENABLE_COVERAGE)
+  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+endif()
+
 if (ENABLE_WARNINGS)
   include(Warnings)
 endif()
@@ -25,28 +28,34 @@ if (ENABLE_OPENMP)
   find_package(OpenMP REQUIRED)
 endif()
 
-
 if (ENABLE_PY_MODULE)
+  if (EXISTS "${CMAKE_SOURCE_DIR}/.venv/bin/python")
+    set(Python_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python" CACHE FILEPATH "Preferred venv Python" FORCE)
+  endif()
 
+  set(Python_FIND_VIRTUALENV ONLY)
   if (CMAKE_VERSION VERSION_LESS 3.18)
     set(DEV_MODULE Development)
   else()
     set(DEV_MODULE Development.Module)
   endif()
 
-  find_package(Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
+  # Add Development to obtain Python::Python
+  find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development ${DEV_MODULE})
+  message(STATUS "Using Python interpreter: ${Python_EXECUTABLE}")
 
   cmake_policy(SET CMP0148 NEW)
-  find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-  add_subdirectory(ext/nanobind)
-
-  # Detect the installed nanobind package and import it into CMake
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
-    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
-
+    OUTPUT_VARIABLE nanobind_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  find_package(nanobind CONFIG QUIET)
+  if (NOT nanobind_FOUND)
+    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
     find_package(nanobind CONFIG REQUIRED)
-
+  endif()
 endif()
 
 # Prefer building library and headers first
@@ -77,11 +86,32 @@ if (ENABLE_TESTING)
   add_subdirectory(tests)
 endif()
 
+if (ENABLE_COVERAGE)
+  add_coverage(QSS::library)   # instrument the code under test
+endif()
+
+
+
 if (ENABLE_IPO)
   include(LTO)
   enable_lto(qss_library)
   enable_lto(qss_cli)
-  if (TARGET qss)  # Python module target exists only when ENABLE_PY_MODULE
-    enable_lto(qss)
+  if (TARGET _qss)
+    enable_lto(_qss)
   endif()
 endif()
+
+# Install Python module (only if target exists and not editable install)
+if(TARGET _qss AND NOT SKBUILD_STATE STREQUAL "editable")
+  install(TARGETS _qss LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss)
+endif()
+
+# Always install Python source files
+install(
+  DIRECTORY ${PROJECT_SOURCE_DIR}/qss/
+  DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
+  FILES_MATCHING
+  PATTERN "*.py"
+  PATTERN "__pycache__" EXCLUDE
+  PATTERN "*.pyc" EXCLUDE
+)
