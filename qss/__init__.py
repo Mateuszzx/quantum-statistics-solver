@@ -1,23 +1,28 @@
-"""
-Quantum Statistics Solver - A library for quantum statistics calculations
-"""
+"""QSS: Quantum Statistics Solver package."""
+from __future__ import annotations
 
-__version__ = "0.1.0"
+# Import extension module first to avoid circular import
+from . import _qss
+from .chemical_potential import chemical_potential
 
-# Import C++ extension (if available)
-try:
-    from ._qss import *  # Import C++ bindings with underscore prefix
-except ImportError:
-    # C++ extension not built yet (e.g., during editable install without build)
-    pass
-
-# Import Python utilities
-from .data_format import numpy4d_to_dataframe
-from .prep import prepare_2D_lattice_data
+# Then import Python wrappers
+from .distributions import DistType, prepare_2D_lattice_data
+from .solver_options import (
+    BracketerType,
+    CoolingSchedule,
+    SolverType,
+    brent_defaults,
+    sa_defaults,
+)
 
 __all__ = [
-    # Python utilities
-    "numpy4d_to_dataframe",
+    "BracketerType",
+    "CoolingSchedule",
+    "DistType",
+    "SolverType",
+    "_qss",
+    "brent_defaults",
+    "chemical_potential",
     "prepare_2D_lattice_data",
-    # C++ functions will be added here when extension is imported
+    "sa_defaults",
 ]

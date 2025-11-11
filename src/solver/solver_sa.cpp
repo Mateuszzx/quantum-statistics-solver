@@ -95,12 +95,15 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
 
         // temperature & step update
         T = next_T(o, k);
+
+        // cumulative decay across iterations: base * scale(T) * (step_decay^k)
         sigma = base_sigma;
         if (o.scale_sigma_by_T && o.T0 > 0.0)
         {
             sigma *= std::sqrt(std::max(0.0, T / o.T0));
         }
-        sigma *= o.step_decay;
+        const double decay_k = std::pow(std::max(0.0, o.step_decay), static_cast<double>(k));
+        sigma *= decay_k;
         sigma = std::max(1e-16, sigma);
 
         if (k + 1 >= o.min_iters)
@@ -169,6 +172,17 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
 
     R.T_final = T;
     R.status = Status::Converged; // or differentiate by stop reason if you want
+    // Optional debug instrumentation (enabled when QSS_DEBUG_SOLVER is set)
+    if (const char *dbg = std::getenv("QSS_DEBUG_SOLVER"))
+    {
+        fprintf(stderr,
+                "[qss][sa] it=%d accepts=%d rejects=%d best=%g finalT=%g\n",
+                R.iterations,
+                R.accepts,
+                R.rejects,
+                R.f_best,
+                R.T_final);
+    }
     return R;
 }
 

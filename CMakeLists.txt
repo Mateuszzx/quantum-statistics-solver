@@ -58,7 +58,7 @@ endif()
 # Build Options
 # ------------------------------------------------------------------------------
 
-option(ENABLE_PY_MODULE "Build Python extension module (_qss)" OFF)
+option(ENABLE_PY_MODULE "Build Python extension module (_qss)" ON)
 option(ENABLE_TESTING "Build C++ and Python tests" OFF)
 option(ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
 option(ENABLE_WARNINGS "Enable strict compiler warnings" OFF)
@@ -252,16 +252,16 @@ if(ENABLE_PY_MODULE)
   if(TARGET _qss AND NOT SKBUILD_STATE STREQUAL "editable")
     install(
       TARGETS _qss
-      LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
-      RUNTIME DESTINATION ${SKBUILD_PLATLIB_DIR}/qss  # For Windows DLLs
+      LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss
+      RUNTIME DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss  # For Windows DLLs
     )
-    message(STATUS "Python extension will be installed to: ${SKBUILD_PLATLIB_DIR}/qss")
+    message(STATUS "Python extension will be installed to: ${SKBUILD_PLATLIB_DIR}/_qss")
   endif()
 
   # Always install Python source files (.py)
   install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/qss/
-    DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
+    DIRECTORY ${PROJECT_SOURCE_DIR}/_qss/
+    DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss
     FILES_MATCHING
     PATTERN "*.py"
     PATTERN "__pycache__" EXCLUDE

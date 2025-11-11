@@ -18,6 +18,7 @@ std::optional<double> distribution(double e_k,
                                    double mu,
                                    double beta,
                                    DistType dist) noexcept;
+
 std::optional<Vec> distribution(const Vec &e_k,
                                 double mu,
                                 double beta,

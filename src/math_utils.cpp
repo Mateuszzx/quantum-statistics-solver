@@ -14,20 +14,21 @@ Mat make_empty_mat(std::size_t rows, std::size_t cols)
 
 
 // ---------- integrals ----------
-double mean_abs_2d(const Mat &z, const double N)
+double mean_abs_2d(const Mat &z, const double /*N*/)
 {
     const std::size_t ny = z.size();
     const std::size_t nx = (ny ? z[0].size() : 0);
     if (ny == 0 || nx == 0)
         return 0.0;
 
-    // Mirror Python: use |z| and simple mean by number of samples
     long double sum = 0.0L;
     for (std::size_t j = 0; j < ny; ++j)
         for (std::size_t i = 0; i < nx; ++i)
             sum += std::fabs(static_cast<long double>(z[j][i]));
 
-    return static_cast<double>(sum / static_cast<long double>(N * N));
+    // Use actual sample count (ny*nx). The passed N may be lattice size but
+    // relying on ny*nx avoids mismatch / scaling instability.
+    return static_cast<double>(sum / static_cast<long double>(ny * nx));
 }
 
 // ---------- bracketing: expansion ----------

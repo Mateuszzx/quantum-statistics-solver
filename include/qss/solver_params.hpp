@@ -12,8 +12,8 @@ struct SolverParams
     int max_iters = 300;
     double expand_factor = 1.5; // BracketerOptions
     int max_expands = 200;
-    double a0 = -5000.0; // initial window
-    double b0 = 1000.0;
+    double a0 = -50.0; // initial window
+    double b0 = 10.0;
 };
 
 } // namespace qss

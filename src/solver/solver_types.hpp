@@ -52,9 +52,9 @@ struct MinResult
     Status status = Status::Unsupported;
     std::vector<double> x_best;
     double f_best = std::numeric_limits<double>::infinity();
-    std::size_t iterations = 0;
-    std::size_t accepts = 0;
-    std::size_t rejects = 0;
+    int iterations = 0; // loop count (may differ from evaluations)
+    int accepts = 0;
+    int rejects = 0;
     double T_final = 0.0;
 };
 

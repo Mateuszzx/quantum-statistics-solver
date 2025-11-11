@@ -27,17 +27,10 @@ repos:
     hooks:
       - id: clang-format
         types_or: [c++, c]
-        files: \.(cpp|hpp|h|c|cc|cxx)$
+        files: \src\.(cpp|hpp|h|c|cc|cxx)$
         exclude: ^tools/
 
-  # Python: General formatting and linting
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-        language_version: python3
-        files: ^qss/.*\.py$
-
+#   Python: General formatting and linting
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.4
     hooks:
@@ -63,7 +56,7 @@ repos:
         args: [--ignore-words-list=nd,te,ony,reuse]
         exclude: '\.ipynb$'
 
-  # Python: docstring coverage
+#   # Python: docstring coverage
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:

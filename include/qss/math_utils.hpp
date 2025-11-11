@@ -1,7 +1,8 @@
 #pragma once
-#include "types.hpp"
 #include <functional>
 #include <vector>
+
+#include "types.hpp"
 
 namespace qss::math
 {

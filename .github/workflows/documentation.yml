@@ -2,68 +2,55 @@ name: Documentation
 
 on:
   push:
-    tags:
-      - "*"
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build-docs:
-    name: Build and publish documentation
+    name: Build Documentation
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Python
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+          cache: 'pip'
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          sudo apt-get install -y cmake g++ doxygen graphviz
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install sphinx sphinx-rtd-theme breathe myst-parser
-          pip install -e ".[docs]"
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            build
+            .venv
+          key: docs-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'CMakeLists.txt') }}
 
-      - name: Prepare build directory
-        run: make prepare
-
-      - name: Configure CMake
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_DOCS=ON \
-            -DENABLE_PY_MODULE=OFF
+      - name: Setup development environment
+        run: bash scripts/setup.sh
 
       - name: Build documentation
-        run: cmake --build build --target docs -j$(nproc)
+        run: bash scripts/docs.sh
 
-      - name: Upload documentation artifacts
+      - name: Upload documentation
         uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: build/docs/html/
-          retention-days: 7
 
-      - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/docs/html
-          force_orphan: true
+    #   - name: Deploy to GitHub Pages
+    #     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #     uses: peaceiris/actions-gh-pages@v3
+    #     with:
+    #       github_token: ${{ secrets.GITHUB_TOKEN }}
+    #       publish_dir: ./build/docs/html
+    #       force_orphan: true

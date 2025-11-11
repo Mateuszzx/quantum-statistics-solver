@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <iostream> 
+
 
 namespace qss
 {
@@ -41,17 +43,17 @@ RootResult OptimizationSolver::solve_root(const Function1D &f,
         return R;
     }
 
-    // Ensure bracket if required
+    // Ensure bracket if required. For Brent/Secant we will try expansion; for Bisection we must succeed.
     Bracket B{a, b, fa, fb, fa * fb <= 0.0};
-    if (!B.valid && (opts_.solver == SolverType::Bisection ||
-                     opts_.solver == SolverType::Brent))
+    if (!B.valid)
     {
         B = bracketer_.bracket(f, a, b);
-        if (!B.valid)
-        {
-            R.status = Status::InvalidBracket;
-            return R;
-        }
+    }
+    // If still invalid and neither endpoint is a root -> fail early for root solvers
+    if (!B.valid && (opts_.solver != SolverType::SimulatedAnnealing))
+    {
+        R.status = Status::InvalidBracket;
+        return R;
     }
     a = B.a;
     b = B.b;
@@ -78,7 +80,8 @@ RootResult OptimizationSolver::solve_root(const Function1D &f,
             {
                 R.root = m;
                 R.froot = fm;
-                R.final_bracket = {a, b, fa, fb, true};
+                bool v = (fa * fb <= 0.0) || (std::abs(fa) <= atol) || (std::abs(fb) <= atol);
+                R.final_bracket = {a, b, fa, fb, v};
                 R.status = Status::Converged;
                 return R;
             }
@@ -95,127 +98,83 @@ RootResult OptimizationSolver::solve_root(const Function1D &f,
         }
         R.root = 0.5 * (a + b);
         R.froot = f(R.root);
-        R.final_bracket = {a, b, fa, fb, true};
+        {
+            bool v = (fa * fb <= 0.0) || (std::abs(fa) <= atol) || (std::abs(fb) <= atol);
+            R.final_bracket = {a, b, fa, fb, v};
+        }
         R.status = Status::MaxIterations;
         return R;
     }
 
-    // Brent-Dekker method
+    // Canonical Brent implementation
     if (opts_.solver == SolverType::Brent || opts_.solver == SolverType::Secant)
     {
-        // For pure Secant, we still start from [a,b]; if not bracketed, we already expanded above.
-        double c = a, fc = fa;
-        double d = b - a, e = d;
-        double x = b, w = b, v = b;
-        double fx = fb, fw = fb, fv = fb;
-
-        for (int i = 0; i < maxI; ++i)
+        double a = B.a, b = B.b;
+        double fa = B.fa, fb = B.fb;
+        if (!(B.valid && fa * fb <= 0.0))
         {
-            R.iterations = i + 1;
-
-            // Keep c as the previous best opposite sign point to x
-            if ((fx > 0 && fc > 0) || (fx < 0 && fc < 0))
+            R.status = Status::InvalidBracket;
+            return R;
+        }
+        // Ensure |fa| >= |fb|
+        if (std::abs(fa) < std::abs(fb)) { std::swap(a,b); std::swap(fa,fb); }
+        double c = a, fc = fa;
+        bool mflag = true; // last step was bisection
+        double s = b, d = 0.0;
+        for (int iter = 0; iter < maxI; ++iter)
+        {
+            R.iterations = iter + 1;
+            // Convergence check
+            if (std::abs(fb) <= atol || close_enough(a,b,atol,rtol))
             {
-                c = a;
-                fc = fa;
-                d = e = x - a;
+                bool v = (fa * fb <= 0.0) || (std::abs(fa) <= atol) || (std::abs(fb) <= atol);
+                R.root = b; R.froot = fb; R.final_bracket = {a,b,fa,fb,v}; R.status = Status::Converged; return R;
             }
-            if (std::abs(fc) < std::abs(fx))
+            if (fa != fc && fb != fc && opts_.solver == SolverType::Brent)
             {
-                a = x;
-                fa = fx;
-                x = c;
-                fx = fc;
-                c = a;
-                fc = fa;
-            }
-
-            // Convergence checks
-            const double xm = 0.5 * (c - x);
-            const double tol1 = atol + rtol * std::abs(x);
-            if (std::abs(xm) <= 2 * tol1 || std::abs(fx) <= atol)
-            {
-                R.root = x;
-                R.froot = fx;
-                R.final_bracket = {std::min(x, c),
-                                   std::max(x, c),
-                                   fx,
-                                   fc,
-                                   true};
-                R.status = Status::Converged;
-                return R;
-            }
-
-            // Attempt inverse quadratic interpolation or secant
-            double p = 0.0, q = 1.0, r = 1.0;
-            if (std::abs(e) > tol1 && std::abs(fa - fx) > 0 &&
-                std::abs(fc - fx) > 0)
-            {
-                // Inverse quadratic interpolation using points (a,fa), (x,fx), (c,fc)
-                double s = fx / fa;
-                double t = fx / fc;
-                double u = fx / fw; // fallback if needed
-                p = s * ((c - x) * t * (t - u) - (a - x) * (1 - u));
-                q = (t - 1) * (u - 1) * (s - 1);
+                // Inverse quadratic interpolation
+                s = ( a*fb*fc / ((fa - fb)*(fa - fc)) )
+                  + ( b*fa*fc / ((fb - fa)*(fb - fc)) )
+                  + ( c*fa*fb / ((fc - fa)*(fc - fb)) );
             }
             else
             {
                 // Secant step
-                p = (c - x) * fx;
-                q = fc - fx;
+                s = b - fb * (b - a) / (fb - fa);
             }
-
-            if (q > 0)
-                p = -p;
-            else
-                q = -q;
-
-            double min1 = 3 * xm * q - std::abs(tol1 * q);
-            double min2 = std::abs(e * q);
-            bool accept_interp = (std::abs(p) < std::min(min1, min2));
-
-            if (!accept_interp)
+            double cond1 = !((s > std::min(a,c) && s < std::max(a,c)));
+            double cond2 = mflag && std::abs(s - b) >= std::abs(b - c) / 2.0;
+            double cond3 = !mflag && std::abs(s - b) >= std::abs(c - d) / 2.0;
+            double cond4 = mflag && std::abs(b - c) <= atol + rtol * std::abs(b);
+            double cond5 = !mflag && std::abs(c - d) <= atol + rtol * std::abs(b);
+            if (cond1 || cond2 || cond3 || cond4 || cond5)
             {
-                e = d = xm;
+                s = 0.5 * (a + b);
+                mflag = true;
             }
             else
             {
-                e = d;
-                d = p / q;
+                mflag = false;
             }
-
-            double u_new =
-                (std::abs(d) > tol1) ? x + d : x + (d > 0 ? +tol1 : -tol1);
-            double fu = f(u_new);
-            if (!std::isfinite(fu))
+            double fs = f(s);
+            if (!std::isfinite(fs)) { R.status = Status::DomainError; return R; }
+            d = c; c = b; fc = fb;
+            if (fa * fs < 0)
             {
-                R.status = Status::DomainError;
-                return R;
-            }
-
-            // Update points
-            a = ((fx * fu) < 0 ? x : c);
-            if ((fx * fu) < 0)
-            {
-                c = x;
-                fc = fx;
+                b = s; fb = fs;
             }
             else
             {
-                fc = fu;
+                a = s; fa = fs;
             }
-            w = x;
-            fw = fx;
-            x = u_new;
-            fx = fu;
-            fa = f(a);
+            if (std::abs(fa) < std::abs(fb)) { std::swap(a,b); std::swap(fa,fb); }
         }
-
-        R.root = x;
-        R.froot = fx;
-        R.final_bracket = {std::min(x, c), std::max(x, c), fx, fc, true};
-        R.status = Status::MaxIterations;
-        return R;
+        {
+            bool v = (fa * fb <= 0.0) || (std::abs(fa) <= atol) || (std::abs(fb) <= atol);
+            R.root = b; R.froot = fb; R.final_bracket = {a,b,fa,fb,v};
+             
+            R.status = Status::MaxIterations; return R;
+        }
     }
 
     R.status = Status::Unsupported;
@@ -236,39 +195,23 @@ double OptimizationSolver::solve_scalar(const Function1D &f,
                                   : mr.x_best[0]);
     }
     auto rr = solve_root(f, a0, b0);
+    // Instrumentation: guard iteration sanity (env controlled)
+    const char *dbg = std::getenv("QSS_DEBUG_SOLVER");
+    if (dbg && (rr.iterations < 0 || rr.iterations > opts_.root.max_iters))
+    {
+        fprintf(stderr,
+                "[qss] anomaly: iterations=%d max=%d status=%d root=%g froot=%g\n",
+                rr.iterations,
+                opts_.root.max_iters,
+                (int)rr.status,
+                rr.root,
+                rr.froot);
+    }
     return rr.root;
 }
 
 // -------- SA helpers used by public API --------
-double OptimizationSolver::sa_next_T_(std::size_t k) const
-{
-    switch (opts_.sa.sched)
-    {
-    case CoolingSchedule::Exponential:
-        return opts_.sa.T0 * std::pow(opts_.sa.alpha, (double)k);
-    case CoolingSchedule::Linear:
-    {
-        if (opts_.sa.max_iters == 0)
-            return 0.0;
-        double frac = 1.0 - (double)k / (double)opts_.sa.max_iters;
-        return std::max(0.0, opts_.sa.T0 * frac);
-    }
-    case CoolingSchedule::Logarithmic:
-        return opts_.sa.T0 / std::log(2.0 + (double)k);
-    }
-    return 0.0;
-}
-
-double OptimizationSolver::reflect_(double x, double lo, double hi)
-{
-    if (!(std::isfinite(lo) && std::isfinite(hi)) || lo >= hi)
-        return x;
-    const double L = hi - lo;
-    double y = std::fmod(x - lo, 2 * L);
-    if (y < 0)
-        y += 2 * L;
-    return (y <= L) ? (lo + y) : (hi - (y - L));
-}
+// Removed unused helpers sa_next_T_ and reflect_ (logic lives solely in SA impl)
 
 // -------- public minimize routes (call the one SA impl) --------
 MinResult OptimizationSolver::sa_minimize_nd_(
@@ -283,7 +226,8 @@ MinResult OptimizationSolver::minimize(const Objective1D &g, double x0) const
     if (opts_.solver != SolverType::SimulatedAnnealing)
     {
         // For now only SA is supported in minimize()
-        return MinResult{.status = Status::Unsupported};
+        return MinResult{Status::Unsupported, std::vector<double>{},
+                         std::numeric_limits<double>::infinity(), 0, 0, 0, 0.0};
     }
     return sa_minimize_nd_(
         [&](const std::vector<double> &v) { return g(v[0]); },
@@ -295,7 +239,8 @@ MinResult OptimizationSolver::minimize(const ObjectiveND &g,
 {
     if (opts_.solver != SolverType::SimulatedAnnealing)
     {
-        return MinResult{.status = Status::Unsupported};
+        return MinResult{Status::Unsupported, std::vector<double>{},
+                         std::numeric_limits<double>::infinity(), 0, 0, 0, 0.0};
     }
     return sa_minimize_nd_(g, x0);
 }

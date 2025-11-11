@@ -101,9 +101,7 @@ public:
 private:
     // helpers (implemented in solver.cpp)
     MinResult sa_minimize_nd_(const ObjectiveND &g,
-                              const std::vector<double> &x0) const;
-    double sa_next_T_(std::size_t k) const;
-    static double reflect_(double x, double lo, double hi);
+                            const std::vector<double> &x0) const;
 
 private:
     CombinedSolverOptions opts_;

@@ -4,7 +4,7 @@
 
 namespace nb = nanobind;
 
-NB_MODULE(qss, m)
+NB_MODULE(_qss, m)
 {
     // Ensure NumPy is available for ndarray construction
     nb::module_::import_("numpy");

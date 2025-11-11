@@ -6,9 +6,9 @@ namespace qss
 {
 
 std::optional<double> distribution(double e_k,
-                                   double mu,
-                                   double beta,
-                                   DistType dist) noexcept
+                                double mu,
+                                double beta,
+                                DistType dist) noexcept
 {
     using namespace qss::detail;
     switch (dist)

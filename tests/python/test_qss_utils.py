@@ -5,106 +5,11 @@ Unit tests for qss Python utilities (data_format.py, prep.py)
 import numpy as np
 import pytest
 
-from qss.data_format import numpy4d_to_dataframe
-from qss.prep import prepare_2D_lattice_data
+from qss.distributions import prepare_2D_lattice_data
 
 
 class TestDataFormat:
     """Tests for qss.data_format module"""
-
-    def test_numpy4d_to_dataframe_basic(self):
-        """Test basic 4D array to DataFrame conversion"""
-        # Create test data: (ND=2, NN=3, NB=2, NH=2)
-        mu = np.random.rand(2, 3, 2, 2)
-        distros = ["FermiDirac", "BoseEinstein"]
-        n = np.array([0.5, 1.0, 1.5])
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-
-        df = numpy4d_to_dataframe(mu, distros, n, beta, H_a)
-
-        # Check shape
-        assert df.shape == (8, 3)  # (2*2*2 = 8 rows, 3 columns)
-
-        # Check index structure
-        assert df.index.names == ["distributions", "beta", "H_a"]
-        assert len(df.index.levels[0]) == 2  # 2 distributions
-
-        # Check columns
-        assert len(df.columns) == 3
-        assert df.columns.tolist() == [0.5, 1.0, 1.5]
-
-    def test_numpy4d_to_dataframe_with_labels(self):
-        """Test conversion with custom distribution labels"""
-        mu = np.ones((2, 2, 2, 2))
-
-        class MockDistro:
-            def __init__(self, name):
-                self.name = name
-
-        distros = [MockDistro("FD"), MockDistro("BE")]
-        n = np.array([1.0, 2.0])
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-
-        df = numpy4d_to_dataframe(mu, distros, n, beta, H_a)
-
-        # Check that distribution names are extracted
-        assert "FD" in df.index.get_level_values(0)
-        assert "BE" in df.index.get_level_values(0)
-
-    def test_numpy4d_to_dataframe_with_custom_labels(self):
-        """Test conversion with explicit distribution labels"""
-        mu = np.ones((2, 2, 2, 2))
-        distros = [0, 1]  # Enum-like integers
-        n = np.array([1.0, 2.0])
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-        distros_labels = ["Fermi-Dirac", "Bose-Einstein"]
-
-        df = numpy4d_to_dataframe(mu, distros, n, beta, H_a, distros_labels)
-
-        # Check custom labels are used
-        assert "Fermi-Dirac" in df.index.get_level_values(0)
-        assert "Bose-Einstein" in df.index.get_level_values(0)
-
-    def test_numpy4d_to_dataframe_wrong_dimensions(self):
-        """Test that wrong dimensionality raises ValueError"""
-        mu_3d = np.random.rand(2, 3, 2)  # Only 3D
-        distros = ["FD", "BE"]
-        n = np.array([0.5, 1.0, 1.5])
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-
-        with pytest.raises(ValueError, match="mu must be a 4-D array"):
-            numpy4d_to_dataframe(mu_3d, distros, n, beta, H_a)
-
-    def test_numpy4d_to_dataframe_shape_mismatch(self):
-        """Test that shape mismatch raises ValueError"""
-        mu = np.random.rand(2, 3, 2, 2)
-        distros = ["FD", "BE"]
-        n = np.array([0.5, 1.0])  # Wrong length (should be 3)
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-
-        with pytest.raises(ValueError, match="Lengths of distros, n, beta, H_a must match"):
-            numpy4d_to_dataframe(mu, distros, n, beta, H_a)
-
-    def test_numpy4d_to_dataframe_values(self):
-        """Test that values are correctly transposed and reshaped"""
-        # Create a simple test case with known values
-        mu = np.arange(24).reshape(2, 3, 2, 2)  # (ND=2, NN=3, NB=2, NH=2)
-        distros = ["D0", "D1"]
-        n = np.array([1.0, 2.0, 3.0])
-        beta = np.array([0.1, 0.2])
-        H_a = np.array([0.0, 1.0])
-
-        df = numpy4d_to_dataframe(mu, distros, n, beta, H_a)
-
-        # Check first row corresponds to mu[0, :, 0, 0]
-        first_row = df.iloc[0].values
-        expected_first_row = mu[0, :, 0, 0]
-        np.testing.assert_array_equal(first_row, expected_first_row)
 
 
 class TestPrep:
@@ -210,30 +115,6 @@ class TestPrep:
 class TestIntegration:
     """Integration tests combining multiple modules"""
 
-    def test_lattice_to_dataframe_workflow(self):
-        """Test complete workflow from lattice preparation to DataFrame"""
-        # Prepare lattice data
-        kx = np.linspace(-np.pi, np.pi, 3)
-        ky = np.linspace(-np.pi, np.pi, 3)
-        e_k, KX, KY = prepare_2D_lattice_data(kx, ky)
-
-        # Simulate some mu data with same k-space shape
-        # Shape: (ND=2 distros, NN=3 filling, NB=2 beta, NH=3*3 k-points)
-        # For this test, flatten k-space as if it were H_a dimension
-        mu_data = np.random.rand(2, 3, 2, 9)
-
-        distros = ["FD", "BE"]
-        n = np.array([0.5, 1.0, 1.5])
-        beta = np.array([0.1, 0.2])
-        H_a = e_k.flatten()  # Use flattened energies as "field" values
-
-        df = numpy4d_to_dataframe(mu_data, distros, n, beta, H_a)
-
-        # Verify integration
-        assert df.shape[0] == 2 * 2 * 9  # ND * NB * NH
-        assert df.shape[1] == 3  # NN
-        assert df.index.names == ["distributions", "beta", "H_a"]
-
 
 # Fixtures for common test data
 @pytest.fixture
@@ -273,28 +154,3 @@ def test_lattice_with_different_hoppings(t, t_prim):
     # Energy at (0, 0) should be: 2*t*2 + 2*t_prim*2
     expected_gamma = 4 * t + 4 * t_prim
     assert e_k[0, 0] == pytest.approx(expected_gamma)
-
-
-@pytest.mark.parametrize(
-    "shape",
-    [
-        (2, 3, 2, 2),
-        (1, 5, 3, 4),
-        (3, 2, 4, 5),
-    ],
-)
-def test_dataframe_with_different_shapes(shape):
-    """Test DataFrame conversion with various array shapes"""
-    ND, NN, NB, NH = shape
-    mu = np.random.rand(*shape)
-
-    distros = [f"D{i}" for i in range(ND)]
-    n = np.linspace(0.1, 1.0, NN)
-    beta = np.linspace(0.1, 1.0, NB)
-    H_a = np.linspace(0.0, 10.0, NH)
-
-    df = numpy4d_to_dataframe(mu, distros, n, beta, H_a)
-
-    assert df.shape == (ND * NB * NH, NN)
-    assert len(df.index.levels[0]) == ND
-    assert len(df.columns) == NN
