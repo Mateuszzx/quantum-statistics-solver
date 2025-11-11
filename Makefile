@@ -111,12 +111,18 @@ prepare: ## Create/refresh build directory
 
 configure: prepare ## Configure CMake build system
 	@echo "[info] Configuring CMake ($(CMAKE_BUILD_TYPE))"
+	@rm -f "$(BUILD_DIR)/CMakeCache.txt"
 	cmake -S . -B "$(BUILD_DIR)" \
 		$(if $(CMAKE_GENERATOR),-G "$(CMAKE_GENERATOR)",) \
 		-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 		-DENABLE_PY_MODULE=ON \
-		-DBUILD_TESTING=ON
+		-DENABLE_TESTING=ON
+
+reconfigure: ## Force reconfigure (cleans CMake cache)
+	@echo "[info] Force reconfiguring (cleaning cache)"
+	@rm -rf "$(BUILD_DIR)/CMakeCache.txt" "$(BUILD_DIR)/CMakeFiles"
+	@$(MAKE) configure
 
 build: configure ## Build C++ library and Python bindings
 	@echo "[info] Building project"
@@ -171,24 +177,24 @@ test-python: venv ## Run Python tests with pytest
 #   codecov -f build/coverage/coverage.xml -t YOUR_TOKEN
 
 coverage-python: venv ## Generate Python coverage report (pytest-cov)
-    @echo "[info] Running Python tests with coverage"
-    @mkdir -p "$(BUILD_DIR)/coverage/python"
-    @PYTHONPATH="$(CURDIR)" $(PYTHON) -m coverage run \
+	@echo "[info] Running Python tests with coverage"
+	@mkdir -p "$(BUILD_DIR)/coverage/python"
+	@PYTHONPATH="$(CURDIR)" $(PYTHON) -m coverage run \
         --source="$(CURDIR)/qss" \
         -m pytest tests/python/ -v
-    @$(PYTHON) -m coverage report -m
-    @$(PYTHON) -m coverage html -d "$(BUILD_DIR)/coverage/python"
-    @$(PYTHON) -m coverage xml -o "$(BUILD_DIR)/coverage/coverage.xml"
-    @echo ""
-    @echo "=================================="
-    @echo "Python Coverage Report Generated"
-    @echo "=================================="
-    @echo "HTML: $(BUILD_DIR)/coverage/python/index.html"
-    @echo "XML:  $(BUILD_DIR)/coverage/coverage.xml"
-    @echo ""
-    @echo "To upload to Codecov manually:"
-    @echo "  codecov -f $(BUILD_DIR)/coverage/coverage.xml -t YOUR_TOKEN"
-    @echo ""
+	@$(PYTHON) -m coverage report -m
+	@$(PYTHON) -m coverage html -d "$(BUILD_DIR)/coverage/python"
+	@$(PYTHON) -m coverage xml -o "$(BUILD_DIR)/coverage/coverage.xml"
+	@echo ""
+	@echo "=================================="
+	@echo "Python Coverage Report Generated"
+	@echo "=================================="
+	@echo "HTML: $(BUILD_DIR)/coverage/python/index.html"
+	@echo "XML:  $(BUILD_DIR)/coverage/coverage.xml"
+	@echo ""
+	@echo "To upload to Codecov manually:"
+	@echo "  codecov -f $(BUILD_DIR)/coverage/coverage.xml -t YOUR_TOKEN"
+	@echo ""
 
 coverage-cpp: ## Generate C++ coverage report (requires lcov/gcovr)
 	@echo "[info] Building with coverage instrumentation"

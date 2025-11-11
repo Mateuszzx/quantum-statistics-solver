@@ -1,0 +1,97 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev-base",
+      "hidden": true,
+      "description": "Base preset for development",
+      "binaryDir": "${sourceDir}/build",
+      "installDir": "${sourceDir}/install",
+      "cacheVariables": {
+        "ENABLE_TESTING": "ON",
+        "ENABLE_WARNINGS": "ON"
+      }
+    },
+    {
+      "name": "dev-debug",
+      "displayName": "Debug (Development)",
+      "description": "Debug build with tests and warnings",
+      "inherits": "dev-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "dev-release",
+      "displayName": "Release (Development)",
+      "description": "Release build with tests",
+      "inherits": "dev-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_IPO": "ON"
+      }
+    },
+    {
+      "name": "python-debug",
+      "displayName": "Python Module (Debug)",
+      "description": "Build Python bindings in debug mode",
+      "inherits": "dev-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ENABLE_PY_MODULE": "ON"
+      }
+    },
+    {
+      "name": "python-release",
+      "displayName": "Python Module (Release)",
+      "description": "Build Python bindings in release mode",
+      "inherits": "dev-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_PY_MODULE": "ON",
+        "ENABLE_IPO": "ON"
+      }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Coverage",
+      "description": "Build with coverage instrumentation",
+      "inherits": "dev-debug",
+      "cacheVariables": {
+        "ENABLE_COVERAGE": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-debug",
+      "configurePreset": "dev-debug",
+      "displayName": "Build Debug",
+      "description": "Build in debug mode"
+    },
+    {
+      "name": "dev-release",
+      "configurePreset": "dev-release",
+      "displayName": "Build Release",
+      "description": "Build in release mode"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "dev-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    }
+  ]
+}

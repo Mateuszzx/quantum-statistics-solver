@@ -55,13 +55,14 @@ open build/coverage/python/index.html   # Python coverage
 ```
 
 Coverage is automatically tracked in CI and uploaded to [Codecov](https://codecov.io):
+
 - Configuration: `codecov.yml`
 - CI integration: `.github/workflows/ci.yml`
 - Target: 80% project coverage, 70% patch coverage
 
 ## Project Structure
 
-```
+``` txt
 quantum-statistics-solver/
 ├── src/                    # C++ source code
 ├── include/                # C++ headers

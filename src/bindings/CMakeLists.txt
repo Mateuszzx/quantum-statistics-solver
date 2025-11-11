@@ -1,135 +1,162 @@
 # src/bindings/CMakeLists.txt
 
-# Only build the Python extension when requested
-if (NOT ENABLE_PY_MODULE)
+# ==============================================================================
+# Python Bindings (nanobind)
+# ==============================================================================
+# Creates the Python extension module '_qss' that wraps the C++ library.
+# Uses nanobind (https://github.com/wjakob/nanobind) for Python<->C++ bindings.
+#
+# The module structure:
+#   - module_main.cpp:               Module initialization, version info
+#   - module_distributions.cpp:      Distribution functions (fd, nflb, etc.)
+#   - module_chemical_potential.cpp: Chemical potential solvers
+# ==============================================================================
+
+# Prevent multiple inclusions (critical for binding modules!)
+include_guard(GLOBAL)
+
+# Early exit if Python module building is disabled
+if(NOT ENABLE_PY_MODULE)
   return()
 endif()
 
-# At the root you've already tried find_package(Python ...) and nanobind (or fetched it).
-# Still, be robust if this directory is configured standalone.
-if (NOT TARGET nanobind::nanobind)
+# Sanity check: Python should have been found in main CMakeLists.txt
+if(NOT Python_FOUND)
+  message(FATAL_ERROR "Python not found but ENABLE_PY_MODULE=ON")
+endif()
+
+# Ensure nanobind is available (should be found in main CMakeLists.txt)
+if(NOT TARGET nanobind::nanobind)
   find_package(nanobind REQUIRED CONFIG)
 endif()
 
-# Some older CMake setups may not bring in Python::Module; ensure it's there.
-if (NOT TARGET Python::Module)
-  find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-endif()
+# ------------------------------------------------------------------------------
+# Collect Binding Source Files
+# ------------------------------------------------------------------------------
 
-# ---- Sources ----
-# List your binding sources here. Only existing files will be added.
-set(QSS_PY_SOURCES
-  module_main.cpp
-  module_chemical_potential.cpp
-  module_distributions.cpp
+set(BINDING_SOURCES
+    module_main.cpp               # Module entry point (NB_MODULE macro)
+    module_distributions.cpp      # Wraps qss::fd, qss::nflb, etc.
+    module_chemical_potential.cpp # Wraps qss::solve_mu_grid, options classes
 )
 
-set(_existing)
-foreach(f IN LISTS QSS_PY_SOURCES)
-  if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
-    list(APPEND _existing "${f}")
+# Verify all sources exist (helps catch typos)
+foreach(src IN LISTS BINDING_SOURCES)
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${src}")
+    message(WARNING "Binding source not found: ${src}")
   endif()
 endforeach()
 
-# Option to enable CPython limited (stable) ABI
-option(QSS_STABLE_ABI "Build Python module with CPython limited/stable ABI" OFF)
+# ------------------------------------------------------------------------------
+# Create Python Extension Module
+# ------------------------------------------------------------------------------
 
-# Don't pass 'MODULE' here; nanobind_add_module creates a MODULE library internally.
-set(_nb_args NB_STATIC)
-if (QSS_STABLE_ABI)
-  list(APPEND _nb_args STABLE_ABI)
-endif()
-
-# ---- Build the nanobind module ----
+# nanobind_add_module creates a Python extension module target
+# STABLE_ABI: Use Python stable ABI (forward compatibility)
+# NB_STATIC: Embed nanobind statically (no runtime dependency)
 nanobind_add_module(
-  _qss  # Changed from 'qss' to '_qss'
-  STABLE_ABI
-  NB_STATIC
-  ${_existing}
+  _qss          # Target name (will produce _qss.cpython-312-x86_64-linux-gnu.so)
+  STABLE_ABI    # Use Python's stable ABI for forward compatibility
+  NB_STATIC     # Link nanobind statically
+  ${BINDING_SOURCES}
 )
 
-# Link against the core library
-target_link_libraries(_qss PRIVATE qss_core)
+# ------------------------------------------------------------------------------
+# Link Libraries
+# ------------------------------------------------------------------------------
 
-# Set output name and properties
-set_target_properties(_qss PROPERTIES
-  OUTPUT_NAME "_qss"  # Changed from 'qss' to '_qss'
-  CXX_VISIBILITY_PRESET hidden
+target_link_libraries(_qss PRIVATE
+    QSS::library     # Our C++ library with all the quantum statistics code
+    Python::Module   # Python C API (provides _Py_NoneStruct, PyFloat_FromDouble, etc.)
 )
 
-# Install the extension
-if(NOT SKBUILD_STATE STREQUAL "editable")
-  install(TARGETS _qss LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss)
-endif()
-
-# Language / warnings / includes
-set_target_properties(_qss PROPERTIES
-  CXX_STANDARD 17
-  CXX_STANDARD_REQUIRED YES
-  POSITION_INDEPENDENT_CODE ON
-  CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN YES
-)
+# ------------------------------------------------------------------------------
+# Include Directories
+# ------------------------------------------------------------------------------
 
 target_include_directories(_qss PRIVATE
-  ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}  # For bindings.hpp
+    ${PROJECT_SOURCE_DIR}/include # For qss/*.hpp headers
 )
 
-# Link against your core library (which already pulls OpenMP if enabled)
-target_link_libraries(_qss PRIVATE QSS::library Python::Python)
+# ------------------------------------------------------------------------------
+# Target Properties
+# ------------------------------------------------------------------------------
 
+set_target_properties(_qss PROPERTIES
+    OUTPUT_NAME "_qss"              # Output file will be _qss.so (not lib_qss.so)
+    PREFIX ""                       # No 'lib' prefix on Unix
+    CXX_STANDARD 17                 # C++17 required
+    CXX_STANDARD_REQUIRED YES
+    POSITION_INDEPENDENT_CODE ON    # Required for shared libraries
+    CXX_VISIBILITY_PRESET hidden    # Hide symbols by default (smaller binary)
+    VISIBILITY_INLINES_HIDDEN YES
+)
 
-# Ensure coverage runtime resolves when linking the shared module
-if (ENABLE_COVERAGE)
-  target_link_libraries(_qss PRIVATE gcov)  # provides __gcov_* symbols
-  target_link_options(_qss PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+# Set output directory (for development builds)
+# Final location: build/python/qss/_qss.cpython-312-x86_64-linux-gnu.so
+set_target_properties(_qss PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python/qss"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python/qss"
+)
+
+# ------------------------------------------------------------------------------
+# Optional: Code Coverage Support
+# ------------------------------------------------------------------------------
+
+if(ENABLE_COVERAGE)
+  target_compile_options(_qss PRIVATE --coverage)
+  target_link_options(_qss PRIVATE --coverage)
 endif()
 
-# Fail fast on missing symbols (GNU/Clang)
-# Keep this now that we link libpython
-target_link_options(_qss PRIVATE
-  $<$<CXX_COMPILER_ID:GNU,Clang>:-Wl,--no-undefined>
-)
+# ------------------------------------------------------------------------------
+# Optional: Strip Symbols in Release Mode
+# ------------------------------------------------------------------------------
 
-# ----------------------------------------------------------------------------
-# Developer convenience: drop the built extension into a predictable folder
-# so it's easy to import from the build tree (add build/python to PYTHONPATH).
-set_target_properties(_qss PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python
-)
-
-# ----------------------------------------------------------------------------
-# Optional: install the extension directly into the current Python's site-packages
-# (useful when building inside a virtualenv). Toggle with -DQSS_INSTALL_TO_VENV=ON/OFF
-option(QSS_INSTALL_TO_VENV "Install qss Python extension into current Python site-packages" ON)
-if (QSS_INSTALL_TO_VENV)
-  # Determine the Python executable used for the build
-  if (NOT Python_EXECUTABLE)
-    if (TARGET Python::Interpreter)
-      get_target_property(_qss_pyexe Python::Interpreter IMPORTED_LOCATION)
-      set(Python_EXECUTABLE "${_qss_pyexe}")
-    endif()
+# Strip debug symbols to reduce binary size (Release builds only)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  if(UNIX AND NOT APPLE)
+    add_custom_command(TARGET _qss POST_BUILD
+      COMMAND ${CMAKE_STRIP} --strip-unneeded $<TARGET_FILE:_qss>
+      COMMENT "Stripping symbols from _qss module"
+    )
   endif()
+endif()
 
-  if (Python_EXECUTABLE)
-    # Query site-packages path (prefer platlib for binary extensions; fall back to purelib)
+# ------------------------------------------------------------------------------
+# Installation Rules
+# ------------------------------------------------------------------------------
+
+# Install the Python extension to the appropriate site-packages directory
+if(NOT SKBUILD_STATE STREQUAL "editable")
+  # If using scikit-build-core (pip install)
+  if(DEFINED SKBUILD_PLATLIB_DIR)
+    install(TARGETS _qss
+      LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
+      RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
+    )
+  else()
+    # Fallback: use Python's platlib location (for 'make install')
     execute_process(
-      COMMAND ${Python_EXECUTABLE} -c "import sysconfig,sys; p=sysconfig.get_paths(); sys.stdout.write(p.get('platlib') or p.get('purelib') or '')"
-      OUTPUT_VARIABLE QSS_PY_SITE
+      COMMAND "${Python_EXECUTABLE}" -c
+        "import sysconfig; print(sysconfig.get_path('platlib'))"
+      OUTPUT_VARIABLE Python_SITEARCH
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    if (QSS_PY_SITE)
-      message(STATUS "qss: will install Python extension to ${QSS_PY_SITE}")
-      # Absolute DESTINATION is allowed; handle both ELF/.so (LIBRARY) and Windows .pyd (RUNTIME)
-      install(TARGETS _qss
-        LIBRARY DESTINATION "${QSS_PY_SITE}"
-        RUNTIME DESTINATION "${QSS_PY_SITE}"
-      )
-    else()
-      message(WARNING "qss: could not determine Python site-packages; skipping install to venv. Set QSS_INSTALL_TO_VENV=OFF or provide Python_EXECUTABLE.")
-    endif()
-  else()
-    message(WARNING "qss: Python_EXECUTABLE not known; skipping install to venv. Set -DPython_EXECUTABLE or enable Python::Interpreter.")
+    install(TARGETS _qss
+      LIBRARY DESTINATION "${Python_SITEARCH}/qss"
+      RUNTIME DESTINATION "${Python_SITEARCH}/qss"
+    )
   endif()
 endif()
+
+# ------------------------------------------------------------------------------
+# Status Messages
+# ------------------------------------------------------------------------------
+
+message(STATUS "Python module '_qss' configured")
+message(STATUS "  Output: ${CMAKE_BINARY_DIR}/python/qss/_qss${CMAKE_SHARED_MODULE_SUFFIX}")
+
+# ==============================================================================
+# End of src/bindings/CMakeLists.txt
+# ==============================================================================

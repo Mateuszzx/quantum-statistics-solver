@@ -1,117 +1,328 @@
-cmake_minimum_required(VERSION 3.22)
+# ==============================================================================
+# Quantum Statistics Solver - Main CMake Configuration
+# ==============================================================================
+# This is the top-level CMakeLists.txt that orchestrates the entire build.
+#
+# Build types:
+#   - Standalone C++ library/CLI (default)
+#   - Python extension module (with -DENABLE_PY_MODULE=ON)
+#
+# Key options:
+#   ENABLE_PY_MODULE   - Build Python bindings (default: OFF)
+#   ENABLE_TESTING     - Build tests (default: OFF)
+#   ENABLE_COVERAGE    - Enable coverage instrumentation (default: OFF)
+#   ENABLE_WARNINGS    - Enable strict compiler warnings (default: OFF)
+#   ENABLE_OPENMP      - Enable OpenMP parallelization (default: OFF)
+#   ENABLE_IPO         - Enable link-time optimization (default: OFF)
+#   BUILD_DOCS         - Build documentation (default: OFF)
+#
+# Examples:
+#   cmake -S . -B build
+#   cmake -S . -B build -DENABLE_PY_MODULE=ON -DENABLE_TESTING=ON
+#   cmake --build build
+# ==============================================================================
 
-project(quantum-statistics-solver
+cmake_minimum_required(VERSION 3.22...3.28)
+
+# ------------------------------------------------------------------------------
+# Project Definition
+# ------------------------------------------------------------------------------
+
+project(
+  quantum-statistics-solver
   VERSION 1.0.0
-  LANGUAGES CXX)
+  DESCRIPTION "High-performance quantum statistics calculations"
+  HOMEPAGE_URL "https://github.com/your-org/quantum-statistics-solver"
+  LANGUAGES CXX
+)
 
-# mark top-level project so options are defined
-if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+# Detect if this is the top-level project (not included via add_subdirectory)
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   set(PROJECT_IS_TOP_LEVEL TRUE)
+else()
+  set(PROJECT_IS_TOP_LEVEL FALSE)
 endif()
 
-# make coverage option available at configure time
-option(ENABLE_COVERAGE "Enable coverage report target" OFF)
+# ------------------------------------------------------------------------------
+# CMake Module Path Configuration
+# ------------------------------------------------------------------------------
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
 
-# If coverage requested, include helper early so flags apply to all targets
-if (ENABLE_COVERAGE)
-  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+# Add nanobind cmake path (for Python bindings)
+if(EXISTS "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
+  list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
 endif()
 
-if (ENABLE_WARNINGS)
+# ------------------------------------------------------------------------------
+# Build Options
+# ------------------------------------------------------------------------------
+
+option(ENABLE_PY_MODULE "Build Python extension module (_qss)" OFF)
+option(ENABLE_TESTING "Build C++ and Python tests" OFF)
+option(ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
+option(ENABLE_WARNINGS "Enable strict compiler warnings" OFF)
+option(ENABLE_OPENMP "Enable OpenMP parallelization" OFF)
+option(ENABLE_IPO "Enable interprocedural optimization (LTO)" OFF)
+option(BUILD_DOCS "Build documentation (Doxygen + Sphinx)" OFF)
+
+# Support standard CMake variable names
+if(BUILD_TESTING AND NOT ENABLE_TESTING)
+    set(ENABLE_TESTING ON CACHE BOOL "Build tests" FORCE)
+endif()
+
+# Print configuration summary
+message(STATUS "========================================")
+message(STATUS "Quantum Statistics Solver Configuration")
+message(STATUS "========================================")
+message(STATUS "Version:         ${PROJECT_VERSION}")
+message(STATUS "Build type:      ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ compiler:    ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Install prefix:  ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "")
+message(STATUS "Options:")
+message(STATUS "  Python module: ${ENABLE_PY_MODULE}")
+message(STATUS "  Testing:       ${ENABLE_TESTING}")
+message(STATUS "  Coverage:      ${ENABLE_COVERAGE}")
+message(STATUS "  Warnings:      ${ENABLE_WARNINGS}")
+message(STATUS "  OpenMP:        ${ENABLE_OPENMP}")
+message(STATUS "  IPO/LTO:       ${ENABLE_IPO}")
+message(STATUS "  Documentation: ${BUILD_DOCS}")
+message(STATUS "========================================")
+
+# ------------------------------------------------------------------------------
+# Include CMake Modules
+# ------------------------------------------------------------------------------
+
+# Code coverage must be included early (before add_subdirectory)
+# so coverage flags are applied to all targets
+if(ENABLE_COVERAGE)
+  include(CodeCoverage)
+  message(STATUS "Coverage instrumentation enabled")
+endif()
+
+# Compiler warnings
+if(ENABLE_WARNINGS)
   include(Warnings)
+  message(STATUS "Strict compiler warnings enabled")
 endif()
 
-if (ENABLE_OPENMP)
+# OpenMP support
+if(ENABLE_OPENMP)
   find_package(OpenMP REQUIRED)
+  message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
-if (ENABLE_PY_MODULE)
-  if (EXISTS "${CMAKE_SOURCE_DIR}/.venv/bin/python")
-    set(Python_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python" CACHE FILEPATH "Preferred venv Python" FORCE)
+# ------------------------------------------------------------------------------
+# Python Configuration (if building Python module)
+# ------------------------------------------------------------------------------
+
+if(ENABLE_PY_MODULE)
+  # Prefer virtual environment Python
+  if(EXISTS "${CMAKE_SOURCE_DIR}/.venv/bin/python")
+    set(Python_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python" CACHE FILEPATH "venv Python" FORCE)
   endif()
 
   set(Python_FIND_VIRTUALENV ONLY)
-  if (CMAKE_VERSION VERSION_LESS 3.18)
+
+  # CMake 3.18+ component name
+  if(CMAKE_VERSION VERSION_LESS 3.18)
     set(DEV_MODULE Development)
   else()
     set(DEV_MODULE Development.Module)
   endif()
 
-  # Add Development to obtain Python::Python
-  find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development ${DEV_MODULE})
-  message(STATUS "Using Python interpreter: ${Python_EXECUTABLE}")
+  # Find Python with Module target (provides Python::Module)
+  find_package(Python 3.8 REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
 
-  cmake_policy(SET CMP0148 NEW)
+  message(STATUS "Python interpreter: ${Python_EXECUTABLE}")
+  message(STATUS "Python version:     ${Python_VERSION}")
+  message(STATUS "Python include dir: ${Python_INCLUDE_DIRS}")
+
+  # Find nanobind
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
     OUTPUT_VARIABLE nanobind_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
   )
-  find_package(nanobind CONFIG QUIET)
-  if (NOT nanobind_FOUND)
-    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/nanobind/cmake")
-    find_package(nanobind CONFIG REQUIRED)
-  endif()
+
+  find_package(nanobind CONFIG REQUIRED)
+  message(STATUS "Using nanobind from: ${nanobind_DIR}")
 endif()
 
-# Prefer building library and headers first
-add_subdirectory(src)
-add_subdirectory(app)
-add_subdirectory(configured)
+# ------------------------------------------------------------------------------
+# Add Project Subdirectories
+# ------------------------------------------------------------------------------
 
-if (ENABLE_TESTING)
+# 1. Core C++ library (libqss) - only add once
+if(NOT TARGET qss_library)
+  add_subdirectory(src)
+endif()
+
+# 2. Command-line application (qss_cli)
+if(NOT TARGET qss_cli)
+  add_subdirectory(app)
+endif()
+
+# 3. Configured headers (version.hpp, config.hpp)
+if(EXISTS "${PROJECT_SOURCE_DIR}/configured")
+  add_subdirectory(configured)
+endif()
+
+# 4. Tests (Google Test for C++, pytest for Python)
+if(ENABLE_TESTING AND NOT TARGET qss_tests)
   include(CTest)
   enable_testing()
 
-  # Prefer a local CPM.cmake if available (good for offline/CI). Otherwise bootstrap CPM.
+  # Fetch GoogleTest
+  message(STATUS "Configuring GoogleTest...")
   set(CPM_LOCAL "${CMAKE_SOURCE_DIR}/cmake/CPM.cmake")
-  if (EXISTS "${CPM_LOCAL}")
-    include(${CPM_LOCAL})
+  if(EXISTS "${CPM_LOCAL}")
+    include("${CPM_LOCAL}")
+    message(STATUS "Using local CPM.cmake")
   else()
-    include(FetchContent)
-    FetchContent_Declare(
-      CPM
-      URL https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/CPM.cmake
+    message(STATUS "Downloading CPM.cmake")
+    file(DOWNLOAD
+      https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/CPM.cmake
+      "${CPM_LOCAL}"
     )
-    FetchContent_MakeAvailable(CPM)
+    include("${CPM_LOCAL}")
   endif()
 
-  # Add GoogleTest via CPM (pinned). Use the gh: shorthand or full URL.
   CPMAddPackage("gh:google/googletest@1.14.0")
+  message(STATUS "GoogleTest configured")
 
+  # Add tests subdirectory (ONLY ONCE!)
   add_subdirectory(tests)
 endif()
 
-if (ENABLE_COVERAGE)
-  add_coverage(QSS::library)   # instrument the code under test
+# 5. Documentation (Doxygen + Sphinx)
+if(BUILD_DOCS)
+  include(Docs)
+  message(STATUS "Documentation build enabled")
 endif()
 
+# ------------------------------------------------------------------------------
+# Code Coverage Configuration
+# ------------------------------------------------------------------------------
+# Coverage must be enabled AFTER all targets are defined
 
+if(ENABLE_COVERAGE)
+  # Add coverage instrumentation to the main library
+  # This generates coverage data when tests are run
+  add_coverage(QSS::library)
+  message(STATUS "Coverage instrumentation added to QSS::library")
+endif()
 
-if (ENABLE_IPO)
+# ------------------------------------------------------------------------------
+# Link-Time Optimization (LTO/IPO)
+# ------------------------------------------------------------------------------
+# LTO can significantly improve performance but increases build time
+
+if(ENABLE_IPO)
   include(LTO)
+
+  # Enable LTO for main targets
   enable_lto(qss_library)
   enable_lto(qss_cli)
-  if (TARGET _qss)
+
+  # Enable LTO for Python module if it exists
+  if(TARGET _qss)
     enable_lto(_qss)
   endif()
+
+  message(STATUS "Link-time optimization enabled")
 endif()
 
-# Install Python module (only if target exists and not editable install)
-if(TARGET _qss AND NOT SKBUILD_STATE STREQUAL "editable")
-  install(TARGETS _qss LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss)
+# ------------------------------------------------------------------------------
+# Installation Rules
+# ------------------------------------------------------------------------------
+# Install Python module and source files (for scikit-build-core)
+
+if(ENABLE_PY_MODULE)
+  # Get platform-specific library directory from scikit-build-core
+  # SKBUILD_PLATLIB_DIR is set by scikit-build during pip install
+  if(NOT DEFINED SKBUILD_PLATLIB_DIR)
+    set(SKBUILD_PLATLIB_DIR "${CMAKE_INSTALL_PREFIX}/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
+  endif()
+
+  # Install compiled Python extension (_qss.so or _qss.pyd)
+  # Skip for editable installs (pip install -e .)
+  if(TARGET _qss AND NOT SKBUILD_STATE STREQUAL "editable")
+    install(
+      TARGETS _qss
+      LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
+      RUNTIME DESTINATION ${SKBUILD_PLATLIB_DIR}/qss  # For Windows DLLs
+    )
+    message(STATUS "Python extension will be installed to: ${SKBUILD_PLATLIB_DIR}/qss")
+  endif()
+
+  # Always install Python source files (.py)
+  install(
+    DIRECTORY ${PROJECT_SOURCE_DIR}/qss/
+    DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
+    FILES_MATCHING
+    PATTERN "*.py"
+    PATTERN "__pycache__" EXCLUDE
+    PATTERN "*.pyc" EXCLUDE
+    PATTERN ".pytest_cache" EXCLUDE
+  )
 endif()
 
-# Always install Python source files
-install(
-  DIRECTORY ${PROJECT_SOURCE_DIR}/qss/
-  DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
-  FILES_MATCHING
-  PATTERN "*.py"
-  PATTERN "__pycache__" EXCLUDE
-  PATTERN "*.pyc" EXCLUDE
-)
+# ------------------------------------------------------------------------------
+# Export Package Configuration
+# ------------------------------------------------------------------------------
+# This allows other CMake projects to find this package with find_package()
+
+if(NOT ENABLE_PY_MODULE)
+  include(GNUInstallDirs)
+  include(CMakePackageConfigHelpers)
+
+  # Install C++ library and headers
+  install(
+    TARGETS qss_library
+    EXPORT qss-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+
+  # Install public headers
+  install(
+    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+  )
+
+  # Generate and install package configuration files
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/qss-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+  )
+
+  install(
+    EXPORT qss-targets
+    FILE qss-targets.cmake
+    NAMESPACE QSS::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/qss
+  )
+
+  configure_file(
+    cmake/qss-config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/qss-config.cmake"
+    @ONLY
+  )
+
+  install(
+    FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/qss-config.cmake"
+      "${CMAKE_CURRENT_BINARY_DIR}/qss-config-version.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/qss
+  )
+endif()
+
+# ==============================================================================
+# End of Main CMakeLists.txt
+# ==============================================================================
