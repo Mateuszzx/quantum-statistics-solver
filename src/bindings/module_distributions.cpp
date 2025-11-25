@@ -56,7 +56,7 @@ void bind_distributions(nb::module_ &m)
 
     // Vector variant: returns 1-D numpy.ndarray[float64]
     m.def(
-        "distribution_vec",
+        "distribution",
         [](qss::DistType dist, double mu, double beta, Vec1 E) -> Out1D {
             const size_t n = (size_t)E.shape(0);
             if (n == 0)
@@ -67,7 +67,7 @@ void bind_distributions(nb::module_ &m)
 
             auto res = qss::distribution(Ev, mu, beta, dist);
             if (!res)
-                throw std::runtime_error("distribution_vec: invalid DistType");
+                throw std::runtime_error("distribution: invalid DistType");
 
             Out1D out = make_out_1d(n);
             std::memcpy(out.data(), res->data(), n * sizeof(double));
@@ -80,33 +80,34 @@ void bind_distributions(nb::module_ &m)
         "Vectorized distribution over a 1-D energy array E.");
 
     m.def(
-        "distribution_2d",
+        "distribution",
         [](qss::DistType dist, double mu, double beta, Mat2In E) -> Mat2Out {
-            const size_t rows = (size_t)E.shape(0);
-            const size_t cols = (size_t)E.shape(1);
+            const size_t rows = E.shape(0);
+            const size_t cols = E.shape(1);
 
-            Mat2Out out = make_out_2d(rows, cols);
-
-            const double *__restrict in = E.data();
-            double *__restrict o = out.data();
-            const size_t N = rows * cols;
-
-// Flat iteration is fastest for C-contiguous buffers.
-// If you compiled with OpenMP, you can parallelize.
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)N; ++i)
+            // Copy input
+            qss::Mat mat_in(rows, qss::Vec(cols));
+            const double *in_ptr = E.data();
+            for (size_t i = 0; i < rows; ++i)
             {
-                auto val = qss::distribution(in[i], mu, beta, dist);
-                if (!val.has_value())
-                    // For matrix API, we prefer raising on invalid dist
-                    throw std::runtime_error(
-                        "distribution_2d: invalid DistType");
-                o[i] = *val;
+                std::memcpy(mat_in[i].data(), in_ptr + i * cols,
+                            cols * sizeof(double));
             }
 
-            return out; // shape (rows, cols)
+            // Call C++ implementation
+            auto res = qss::distribution(mat_in, mu, beta, dist);
+            if (!res)
+                throw std::runtime_error("distribution: invalid DistType");
+
+            // Copy output
+            Mat2Out out = make_out_2d(rows, cols);
+            double *out_ptr = out.data();
+            for (size_t i = 0; i < rows; ++i)
+            {
+                std::memcpy(out_ptr + i * cols, (*res)[i].data(),
+                            cols * sizeof(double));
+            }
+            return out;
         },
         nb::arg("dist"),
         nb::arg("mu"),

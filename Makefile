@@ -194,13 +194,16 @@ coverage-cpp: ## Generate C++ coverage report (requires lcov/gcovr)
         gcovr -r . --object-directory "$(BUILD_DIR)" \
             --html --html-details \
             -o "$(BUILD_DIR)/coverage/cpp/index.html" \
-            --exclude 'tests/.*' --exclude 'external/.*'; \
+            --exclude 'tests/.*' --exclude 'external/.*' \
+            --exclude '.*nanobind.*' --exclude '.*build/.*' \
+            --exclude 'app/.*' \
+			--exclude 'src/bindings/.*';\
     else \
         lcov --capture --directory "$(BUILD_DIR)" \
             --output-file "$(BUILD_DIR)/coverage/cpp/coverage.info" \
             --rc geninfo_unexecuted_blocks=1; \
         lcov --remove "$(BUILD_DIR)/coverage/cpp/coverage.info" \
-            '/usr/*' '*/tests/*' '*/external/*' \
+            '/usr/*' '*/tests/*' '*/external/*' '*/build/*' '*nanobind*' '*/app/*' '*/src/bindings/*' \
             --output-file "$(BUILD_DIR)/coverage/cpp/coverage.cleaned.info"; \
         genhtml "$(BUILD_DIR)/coverage/cpp/coverage.cleaned.info" \
             --output-directory "$(BUILD_DIR)/coverage/cpp"; \

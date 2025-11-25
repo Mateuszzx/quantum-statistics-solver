@@ -1,5 +1,9 @@
-#include "../config.hpp" // QSS_OMP_THRESHOLD
-#include "impl.hpp"
+/**
+ * @file nflb.cpp
+ * @brief Implementation of the Non-Fermi-Liquid (NFLB) distribution.
+ */
+
+#include "qss/distributions.hpp"
 #include "qss/types.hpp"
 #include <cmath>
 
@@ -13,6 +17,18 @@ namespace qss::detail
 
 namespace
 {
+/**
+ * @brief Core calculation for Non-Fermi-Liquid distribution.
+ * 
+ * Computes the distribution function derived from a specific spin-liquid ansatz:
+ * \f[
+ * f(x) = \frac{e^x - \sqrt{e^{2x} + 8e^x} + 8}{e^x + 8}
+ * \f]
+ * where \f$ x = \beta(E - \mu) \f$.
+ * 
+ * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
+ * @return double Distribution value in [0, 1].
+ */
 inline double nflb_from_x(double x) noexcept
 {
     if (x > UP_EXP_LIMIT)
@@ -39,9 +55,6 @@ void nflb_distribution_into(const double *ek,
                             double beta,
                             double *out)
 {
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static) if (size >= QSS_OMP_THRESHOLD)
-#endif
     for (std::size_t i = 0; i < size; ++i)
     {
         out[i] = nflb_from_x(beta * (ek[i] - mu));

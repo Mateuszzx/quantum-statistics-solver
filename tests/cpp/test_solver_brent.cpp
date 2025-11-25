@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "qss/solver.hpp"
-#include "qss/solver_params.hpp"
 #include <cmath>
 
 TEST(BrentRoot, SimpleQuadratic) {

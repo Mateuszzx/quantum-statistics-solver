@@ -1,4 +1,5 @@
 """High-level wrappers for chemical potential calculations."""
+
 from __future__ import annotations
 
 from typing import Sequence
@@ -28,7 +29,7 @@ def _dist_label(d: _qss.DistType | PyDistType | str) -> str:
     return str(d).upper()
 
 
-def chemical_potential( # noqa: PLR0913
+def chemical_potential(  # noqa: PLR0913
     distros: Sequence[PyDistType | _qss.DistType | str],
     n_vals: Sequence[float],
     beta_vals: Sequence[float],
@@ -126,11 +127,9 @@ def chemical_potential( # noqa: PLR0913
                             "residual": float(err),
                         }
                     )
-                    index_keys.append((_dist_label(distro), n_val, 1/beta_val, h_val))
+                    index_keys.append((_dist_label(distro), n_val, 1 / beta_val, h_val))
 
-    idx = pd.MultiIndex.from_tuples(
-        index_keys, names=["distro", "n", "k_BT", "H_a"]
-    )
+    idx = pd.MultiIndex.from_tuples(index_keys, names=["distro", "n", "k_BT", "H_a"])
     return pd.DataFrame.from_records(records, index=idx)
 
 

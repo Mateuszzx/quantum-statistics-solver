@@ -1,5 +1,9 @@
-#include "../config.hpp" // QSS_OMP_THRESHOLD
-#include "impl.hpp"
+/**
+ * @file nflb_i.cpp
+ * @brief Implementation of the Implicit Non-Fermi-Liquid (NFLB_i) distribution.
+ */
+
+#include "qss/distributions.hpp"
 #include "qss/types.hpp"
 #include <cmath>
 
@@ -15,6 +19,19 @@ namespace qss::detail
 
 namespace
 {
+/**
+ * @brief Finds a root of a cubic polynomial in [0, 1].
+ * 
+ * Solves \f$ ((p_0 f + p_1) f + p_2) f + p_3 = 0 \f$ for \f$ f \in [0, 1] \f$.
+ * Uses a robust bisection method.
+ * 
+ * @param p0 Coefficient of \f$ f^3 \f$.
+ * @param p1 Coefficient of \f$ f^2 \f$.
+ * @param p2 Coefficient of \f$ f^1 \f$.
+ * @param p3 Constant term.
+ * @param[out] root The found root.
+ * @return true if a root was found in [0, 1], false otherwise.
+ */
 inline bool find_root_on_unit_interval(double p0,
                                        double p1,
                                        double p2,
@@ -67,6 +84,18 @@ inline bool find_root_on_unit_interval(double p0,
     return true;
 }
 
+/**
+ * @brief Core calculation for Implicit Non-Fermi-Liquid distribution.
+ * 
+ * Solves the cubic equation:
+ * \f[
+ * e^x f^3 + (2e^x + 8) f^2 - 16 f + 8 = 0
+ * \f]
+ * for \f$ f \in [0, 1] \f$, then returns \f$ 2f \f$ (scaled to [0, 2]).
+ * 
+ * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
+ * @return double Distribution value in [0, 2].
+ */
 inline double nflb_i_from_x(double x) noexcept
 {
     if (x > UP_EXP_LIMIT)
@@ -101,9 +130,6 @@ void nflb_i_distribution_into(const double *ek,
                               double beta,
                               double *out)
 {
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static) if (size >= QSS_OMP_THRESHOLD)
-#endif
     for (std::size_t i = 0; i < size; ++i)
     {
         out[i] = nflb_i_from_x(beta * (ek[i] - mu));

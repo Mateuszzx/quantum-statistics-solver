@@ -1,15 +1,29 @@
-#include "../config.hpp" // QSS_OMP_THRESHOLD
-#include "impl.hpp"
+/**
+ * @file flb.cpp
+ * @brief Implementation of the Fermi-Liquid-Like (Spin Liquid) distribution.
+ */
+
+#include "qss/distributions.hpp"
 #include "qss/types.hpp"
 #include <cmath>
 
 namespace qss::detail
 {
 
+/// Spin degeneracy factor.
 inline constexpr double FD_SPIN = 2.0;
 
 namespace
 {
+/**
+ * @brief Core calculation for Fermi-Liquid-Like distribution.
+ * 
+ * Computes \f$ f(x) = \frac{2}{e^x + 2} \f$ where \f$ x = \beta(E - \mu) \f$.
+ * This distribution arises in certain spin liquid models.
+ * 
+ * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
+ * @return double Distribution value in [0, 2].
+ */
 inline double flb_from_x(double x) noexcept
 {
     if (x > UP_EXP_LIMIT)
@@ -34,9 +48,6 @@ void flb_distribution_into(const double *ek,
                            double beta,
                            double *out)
 {
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static) if (size >= QSS_OMP_THRESHOLD)
-#endif
     for (std::size_t i = 0; i < size; ++i)
     {
         out[i] = flb_from_x(beta * (ek[i] - mu));

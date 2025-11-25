@@ -105,3 +105,46 @@ TEST(Distributions, FD_Vector_Equals_ElementwiseScalar)
         EXPECT_NEAR(v[i], s, 1e-12) << "Mismatch at i=" << i;
     }
 }
+
+TEST(Distributions, MatrixOverload) {
+    // 2x2 matrix
+    qss::Mat E = {{0.0, 1.0}, {2.0, 3.0}};
+    double mu = 0.5;
+    double beta = 1.0;
+    
+    auto res = qss::distribution(E, mu, beta, DistType::FD);
+    ASSERT_TRUE(res.has_value());
+    const qss::Mat& out = *res;
+    
+    ASSERT_EQ(out.size(), 2);
+    ASSERT_EQ(out[0].size(), 2);
+    ASSERT_EQ(out[1].size(), 2);
+    
+    // Check values match scalar calls
+    EXPECT_NEAR(out[0][0], *qss::distribution(0.0, mu, beta, DistType::FD), 1e-12);
+    EXPECT_NEAR(out[1][1], *qss::distribution(3.0, mu, beta, DistType::FD), 1e-12);
+}
+
+TEST(Distributions, MatrixOverloadInvalidEnum) {
+    qss::Mat E = {{0.0}};
+    auto bad = static_cast<DistType>(999);
+    auto res = qss::distribution(E, 0.0, 1.0, bad);
+    EXPECT_FALSE(res.has_value());
+}
+
+TEST(Distributions, DispatchOtherTypes) {
+    double ek = 0.5;
+    double mu = 0.0;
+    double beta = 1.0;
+    
+    // Just verify they return values and don't crash/return nullopt
+    EXPECT_TRUE(qss::distribution(ek, mu, beta, DistType::FLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek, mu, beta, DistType::NFLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek, mu, beta, DistType::NFLB_i).has_value());
+    
+    // Vector versions
+    qss::Vec ek_vec = {0.5};
+    EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, DistType::FLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, DistType::NFLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, DistType::NFLB_i).has_value());
+}

@@ -80,40 +80,88 @@ TEST(SolverTest, SecantConverges)
     EXPECT_NEAR(R.root, 0.7390851332, 1e-6);
 }
 
-TEST(SolverTest, SimulatedAnnealing1DQuadratic)
-{
-    CombinedSolverOptions opts;
-    opts.solver = SolverType::SimulatedAnnealing;
-    opts.sa.max_iters = 5000;
-    opts.sa.min_iters = 200;
-    opts.sa.stall_iters = 1500;
-    opts.sa.T0 = 1.0;
-    opts.sa.alpha = 0.995;
-    OptimizationSolver solver(opts);
-    Objective1D g = [](double x) { return (x - 5.0) * (x - 5.0); };
-    auto MR = solver.minimize(g, 0.0);
-    ASSERT_EQ(MR.status, Status::Converged);
-    ASSERT_FALSE(MR.x_best.empty());
-    EXPECT_NEAR(MR.x_best[0], 5.0, 0.05) << "SA should find minimum near 5";
+
+// --- Helper Functions ---
+static double simple_parabola(double x) { return x * x; }
+static double simple_root_func(double x) { return x * x - 4.0; } // Roots at +/- 2
+
+// --- OptimizationSolver::solve_root Coverage ---
+
+TEST(SolverTest, SolveRoot_UnsupportedSolver) {
+    OptimizationSolver solver;
+    solver.set_solver_type(SolverType::SimulatedAnnealing); // Not a root solver
+    
+    auto result = solver.solve_root(simple_root_func, 0.0, 5.0);
+    EXPECT_EQ(result.status, Status::Unsupported);
 }
 
-TEST(SolverTest, SimulatedAnnealingBoundsReflect)
-{
-    CombinedSolverOptions opts;
-    opts.solver = SolverType::SimulatedAnnealing;
-    opts.sa.max_iters = 2000;
-    opts.sa.min_iters = 100;
-    opts.sa.T0 = 2.0;
-    opts.sa.alpha = 0.98;
-    opts.sa.bounds = {{-1.0, 1.0}}; // 1D bounds
-    opts.sa.reflect_bounds = true;
-    OptimizationSolver solver(opts);
-    Objective1D g = [](double x) { return (x - 0.3) * (x - 0.3); };
-    auto MR = solver.minimize(g, 0.95); // near upper bound
-    ASSERT_EQ(MR.status, Status::Converged);
-    ASSERT_FALSE(MR.x_best.empty());
-    EXPECT_GE(MR.x_best[0], -1.0);
-    EXPECT_LE(MR.x_best[0], 1.0);
-    EXPECT_NEAR(MR.x_best[0], 0.3, 0.05);
+TEST(SolverTest, SolveRoot_DomainError_InfiniteBounds) {
+    OptimizationSolver solver;
+    solver.set_solver_type(SolverType::Bisection);
+    
+    double inf = std::numeric_limits<double>::infinity();
+    
+    auto result1 = solver.solve_root(simple_root_func, -inf, 5.0);
+    EXPECT_EQ(result1.status, Status::DomainError);
+
+    auto result2 = solver.solve_root(simple_root_func, 0.0, inf);
+    EXPECT_EQ(result2.status, Status::DomainError);
+}
+
+TEST(SolverTest, SolveRoot_MaxIterations_Bisection) {
+    OptimizationSolver solver;
+    solver.set_solver_type(SolverType::Bisection);
+    
+    SolverOptions root_opts;
+    root_opts.max_iters = 1; // Too few to converge
+    root_opts.rel_tol = 1e-15;
+    root_opts.abs_tol = 1e-15;
+    solver.set_root_options(root_opts);
+
+    // Root is at 2.0. Bracket [0, 5]. Midpoint 2.5. 
+    // 1 iteration won't reach tolerance.
+    auto result = solver.solve_root(simple_root_func, 0.0, 5.0);
+    EXPECT_EQ(result.status, Status::MaxIterations);
+}
+
+TEST(SolverTest, SolveRoot_MaxIterations_Brent) {
+    OptimizationSolver solver;
+    solver.set_solver_type(SolverType::Brent);
+    
+    SolverOptions root_opts;
+    root_opts.max_iters = 1; 
+    root_opts.rel_tol = 1e-15;
+    root_opts.abs_tol = 1e-15;
+    solver.set_root_options(root_opts);
+
+    auto result = solver.solve_root(simple_root_func, 0.0, 5.0);
+    EXPECT_EQ(result.status, Status::MaxIterations);
+}
+
+TEST(SolverTest, Minimize_UnsupportedSolver) {
+    OptimizationSolver solver;
+    solver.set_solver_type(SolverType::Bisection); // Not a minimizer
+    
+    auto result = solver.minimize(simple_parabola, 2.5);
+    EXPECT_EQ(result.status, Status::Unsupported);
+}
+
+TEST(BracketerTest, MaxIterations) {
+    BracketerOptions opts;
+    opts.max_expands = 1; // Very few expands
+    Bracketer bracketer(BracketerType::Expansion, opts);
+    
+    // Start with a small interval that doesn't bracket the root (root at 2.0)
+    // [0.1, 0.2] -> f(0.1) < 0, f(0.2) < 0. Needs expansion.
+    auto res = bracketer.bracket(simple_root_func, 0.1, 0.2);
+    
+    // It might fail to find bracket in 1 step
+    // If it fails, valid should be false
+    if (!res.valid) {
+        SUCCEED();
+    } else {
+        // If it succeeded, check if it actually brackets
+        EXPECT_LE(res.fa * res.fb, 0.0);
+    }
 }
 

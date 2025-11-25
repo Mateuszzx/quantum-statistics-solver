@@ -21,9 +21,10 @@ add_executable(qss_tests
   test_main.cpp
   test_distributions.cpp      # add more test_*.cpp files as you create them
   test_solver.cpp
+  test_solver_sa.cpp
+  test_solver_brent.cpp
   test_math_utils.cpp
   test_chemical_potential.cpp
-  test_brent_root.cpp
   test_distribution_total.cpp
 )
 

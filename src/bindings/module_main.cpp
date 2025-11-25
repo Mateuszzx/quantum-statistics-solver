@@ -12,5 +12,6 @@ NB_MODULE(_qss, m)
 
     // Call binder functions implemented in other .cpp files
     qss_bindings::bind_distributions(m);
+    qss_bindings::bind_solver(m);
     qss_bindings::bind_chemical_potential(m);
 }

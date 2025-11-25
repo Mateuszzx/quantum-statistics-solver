@@ -38,6 +38,7 @@ set(BINDING_SOURCES
     module_main.cpp               # Module entry point (NB_MODULE macro)
     module_distributions.cpp      # Wraps qss::fd, qss::nflb, etc.
     module_chemical_potential.cpp # Wraps qss::solve_mu_grid, options classes
+    module_solver.cpp
 )
 
 # Verify all sources exist (helps catch typos)

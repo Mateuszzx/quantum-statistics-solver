@@ -50,6 +50,9 @@ else()
             --object-directory '${CMAKE_BINARY_DIR}' \
             --filter '${CMAKE_SOURCE_DIR}/src/.*' \
             --exclude '${CMAKE_SOURCE_DIR}/src/bindings/.*' \
+            --exclude '.*nanobind.*' \
+            --exclude '.*build/.*' \
+            --exclude '.*tests/.*' \
             --html --html-details \
             -o '${COVERAGE_OUTPUT_DIR}/index.html'; \
         else \
@@ -58,9 +61,11 @@ else()
           lcov --remove '${COVERAGE_OUTPUT_DIR}/coverage.info' \
             '/usr/*' \
             '*/external/*' \
-            '*/build/_deps/*' \
+            '*/build/*' \
             '*/tests/*' \
             '*/src/bindings/*' \
+            '*nanobind*' \
+            '*/app/main.cpp' \
             --output-file '${COVERAGE_OUTPUT_DIR}/coverage.cleaned.info' || true; \
           genhtml '${COVERAGE_OUTPUT_DIR}/coverage.cleaned.info' --output-directory '${COVERAGE_OUTPUT_DIR}/html' || true; \
         fi"

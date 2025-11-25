@@ -1,12 +1,13 @@
-// Simplified chemical potential solving implementation
-#include "qss/chemical_potential.hpp"
-#include "chem_helpers.hpp" // distribution_total(E, mu, beta, dist, delta)
-#include "qss/math_utils.hpp"
-#include "qss/solver.hpp"
 #include <algorithm>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+
+#include "qss/chemical_potential.hpp"
+#include "chem_helpers.hpp" 
+#include "qss/math_utils.hpp"
+#include "qss/solver.hpp"
+
 
 namespace qss
 {
@@ -65,7 +66,7 @@ namespace
             throw std::invalid_argument("chemical_potential_B: kx/ky vs E shape mismatch");
 
         auto f = [&](double mu) {
-            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, beta, dist, delta), N) - n_assumed;
+            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, beta, dist, delta)) - n_assumed;
         };
 
         qss::OptimizationSolver solver(opts);
@@ -137,13 +138,13 @@ ChemicalPotentialResult chemical_potential_B(
 
     if (std::isfinite(R.mu)) {
         const auto F = qss::chem::distribution_total(E, R.mu, beta, dist, delta);
-        R.error = std::abs(qss::math::mean_abs_2d(F, N) - n_assumed);
+        R.error = std::abs(qss::math::mean_abs_2d(F) - n_assumed);
     }
     return R;
 }
 
 // Vector of betas
-std::vector<ChemicalPotentialResult> chemical_potential_B(
+std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
     DistType dist,
     const Vec &betas,
     double n_assumed,

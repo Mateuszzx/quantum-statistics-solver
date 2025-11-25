@@ -1,4 +1,4 @@
-#include "solver/solver_sa.hpp"
+#include "qss/solver_sa.hpp"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -172,17 +172,6 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
 
     R.T_final = T;
     R.status = Status::Converged; // or differentiate by stop reason if you want
-    // Optional debug instrumentation (enabled when QSS_DEBUG_SOLVER is set)
-    if (const char *dbg = std::getenv("QSS_DEBUG_SOLVER"))
-    {
-        fprintf(stderr,
-                "[qss][sa] it=%d accepts=%d rejects=%d best=%g finalT=%g\n",
-                R.iterations,
-                R.accepts,
-                R.rejects,
-                R.f_best,
-                R.T_final);
-    }
     return R;
 }
 

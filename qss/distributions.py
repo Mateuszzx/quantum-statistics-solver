@@ -159,11 +159,11 @@ def distribution(
 
     if e_k.ndim == 1:
         return cast(
-            NDArray[np.floating], _qss.distribution_vec(cpp_dist_type, mu, beta, e_k)
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k)
         )
     if e_k.ndim == 2:
         return cast(
-            NDArray[np.floating], _qss.distribution_2d(cpp_dist_type, mu, beta, e_k)
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k)
         )
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 

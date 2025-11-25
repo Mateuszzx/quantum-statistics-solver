@@ -1,87 +1,139 @@
-"""Entropy functions"""
+"""
+Entropy calculation module.
+"""
+
+from __future__ import annotations
+
 import numpy as np
+import pandas as pd
 
-import chemical_potential as cp
-import distributions as dist
+from .distributions import distribution
 
 
-# Helper function to safe get logarithm
 def safe_log(x: np.ndarray) -> np.ndarray:
     """Compute the logarithm safely, avoiding log(0) issues."""
-    with np.errstate(divide='ignore', invalid='ignore'):
-        return np.where(x > 0, np.log(x), 0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where(x > 0, np.log(x), 0.0)
 
 
-def calculate_entropy_formula(nk: np.ndarray, distro: dist.DistType) -> np.ndarray:
-        """Helper function to calculate entropy based on distribution."""
-        if distro == "FD":
-            nk = nk/2
-            return 2*(-nk * safe_log(nk)
-                    - (1 - nk) * safe_log(1 - nk))
-
-        if distro == "FLB":
-            # nk = nk/2
-            return (-nk * safe_log(nk)
-                    + 2 * nk * safe_log(2)
-                    - 2 * (1 - nk/2) * safe_log(1 - nk/2))
-        if distro in ["NFL_i", "NFL"]:
-            return (-nk  * safe_log(nk)
-                    + 2 * nk * safe_log(2)
-                    + 2 * (1 - nk / 2) * safe_log(1 - nk / 2)
-                    - 2 * (1 - nk ) * safe_log(1 - nk ))
-        raise ValueError("Unknown distribution")
-
-
-
-def calculate_entropy(n: float | np.ndarray, e_k: np.ndarray, beta: float, distro: dist.DistType,
-                    kx: np.ndarray | None = None, ky: np.ndarray | None = None, mu: float | None = None,
-                    dim: int = 2) -> float | np.ndarray:
+def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
     """
-    Calculate the entropy for a given distribution and parameters.
+    Calculate entropy per k-state for a single spin channel.
+    Parameters
+    ----------
+    n : np.ndarray
+        Occupancy per spin channel (values in [0, 1]).
+    distro : str
+        Distribution type ("FD", "FLB", "NFLB", "NFLB_i").
 
-    Args:
-        n (Union[float, np.ndarray]): Density value(s).
-        e_k (np.ndarray): Wave vector array.
-        beta (float): Inverse temperature.
-        distro (dist.DistType): Distribution type.
-        kx (Optional[np.ndarray]): Optional x-axis grid for 2D.
-        ky (Optional[np.ndarray]): Optional y-axis grid for 2D.
-        dim (int): Dimension (1 or 2).
-
-    Returns:
-        Union[float, np.ndarray]: Calculated entropy.
+    Returns
+    -------
+    np.ndarray
+        Entropy values per k-state.
     """
+    # Precompute logs
+    ln_n = safe_log(n)
+    ln_1_n = safe_log(1 - n)
+
+    if distro == "FD":
+        # Standard fermion entropy: -n ln n - (1-n) ln (1-n)
+        return -n * ln_n - (1 - n) * ln_1_n
+
+    if distro == "FLB":
+        # FLB: S = S_fermion + n ln 2
+        return -n * ln_n - (1 - n) * ln_1_n + n * np.log(2)
+
+    if distro in ["NFLB", "NFLB_i"]:
+        # NFLB (valid for n_tot <= 1, i.e., n_single <= 0.5)
+        # S_single(x) = -x ln x + x ln 2 + (1-x) ln(1-x) - (1-2x) ln(1-2x)
+        ln_1_2n = safe_log(1 - 2 * n)
+        return -n * ln_n + n * np.log(2) + (1 - n) * ln_1_n - (1 - 2 * n) * ln_1_2n
+
+    raise ValueError(f"Unknown distribution: {distro}")
 
 
-    if isinstance(n, (int, float)):
-        if mu is None:
-            mu = cp.chemical_potential_computation(distro=distro, beta=beta, n=n, dim=dim, e_k=e_k, kx=kx, ky=ky)
-            print(f'mu: {mu:.3f}, beta: {beta}, distro: {distro}')
-            print(f" n_computed: {cp.compute_density(mu=mu, dist_type=distro, beta=beta, e_k=e_k, dim=2, kx = kx, ky = ky):.2f}, n_assigned: {n:.2f}")
+def entropy(
+    df: pd.DataFrame,
+    E: np.ndarray,
+    g: float = 2.0,
+    muB_eV_per_T: float = 5.788381806e-5,
+) -> pd.DataFrame:
+    """
+    Compute average entropy for each state in the chemical potential DataFrame.
 
-        if dim == 2 and kx is not None and ky is not None:
-            nk = dist.distribution(dist=distro, e_k=e_k, mu=mu, beta=beta)
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing chemical potential results.
+        Expected index levels: 'distro', 'n', 'k_BT', 'H_a'.
+        Expected columns: 'mu', ...
+    E : np.ndarray
+        Energy dispersion array.
+    g : float
+        Landé g-factor.
+    muB_eV_per_T : float
+        Bohr magneton in eV/T.
 
-        elif dim == 2 and kx is None and ky is None:
-            nk = dist.distribution_symmetry_2d(dist=distro, e_k=e_k, mu=mu, beta=beta)
+    Returns
+    -------
+    pd.DataFrame
+        Original DataFrame with a new 'entropy' column.
+    """
+    # Ensure E is numpy array
+    E = np.asarray(E)
 
-        elif dim == 1:
-            nk = dist.distribution(dist=distro, e_k=e_k, mu=mu, beta=beta)
+    entropies = []
+
+    # Iterate over the DataFrame
+    for row in df.itertuples():
+        # Extract parameters from index or columns
+        try:
+            if isinstance(row.Index, tuple) and len(row.Index) == 4:
+                distro_str, _, k_BT, H_a = row.Index
+            else:
+                distro_str = row.distro
+                k_BT = row.k_BT
+                H_a = row.H_a
+        except AttributeError as e:
+            raise ValueError(
+                "Input DataFrame must have 'distro', 'n', 'k_BT', 'H_a' either as MultiIndex levels or columns."
+            ) from e
+
+        mu = row.mu
+
+        # Handle temperature
+        beta = np.inf if k_BT == 0 else 1.0 / k_BT
+
+        if H_a == 0:
+            # Spin degenerate case
+            # distribution() returns total occupancy (0..2 for FD)
+            n_tot = distribution(E, mu, beta, distro_str)
+            n_single = n_tot / 2.0
+
+            # Total entropy = 2 * single_channel_entropy
+            s_k = 2.0 * entropy_single_channel(n_single, distro_str)
+            avg_entropy = np.mean(s_k)
         else:
-            raise ValueError("Unknown dimension")
+            # Zeeman split case
+            delta = 0.5 * g * muB_eV_per_T * H_a
 
-        entropy = calculate_entropy_formula(nk, distro=distro)
+            E_up = E - delta
+            E_down = E + delta
 
-        if kx is None or ky is None:
-            entropy = cp.left_edge_from_samples_1d(entropy , e_k)
-        else:
-            entropy = cp.left_edge_from_samples_2d(entropy, kx, ky)
+            # distribution() returns total occupancy form (0..2)
+            # Physical single-spin occupancy is distribution()/2
+            n_up = distribution(E_up, mu, beta, distro_str) / 2.0
+            n_down = distribution(E_down, mu, beta, distro_str) / 2.0
 
-        if mu is None:
-            print(f"Entropy: {entropy:.3f} \n")
-        return entropy
+            # Total entropy = S(n_up) + S(n_down)
+            s_k = entropy_single_channel(n_up, distro_str) + entropy_single_channel(
+                n_down, distro_str
+            )
+            avg_entropy = np.mean(s_k)
 
-    if isinstance(n, np.ndarray):
-        return np.array([calculate_entropy(n=n_i, e_k=e_k, beta=beta, distro=distro, dim=dim, kx=kx, ky=ky, mu=mu_i) for n_i, mu_i in zip(n,mu)])
+        entropies.append(avg_entropy)
 
-    raise ValueError("Invalid density value, should be a float or array of floats.")
+    # Return new DataFrame with entropy column
+    df_out = df.copy()
+    df_out["entropy"] = entropies
+    return df_out

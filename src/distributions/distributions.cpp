@@ -1,5 +1,12 @@
+/**
+ * @file distributions.cpp
+ * @brief Dispatch logic for statistical distributions.
+ * 
+ * Implements the main `distribution` function overloads that dispatch to specific
+ * distribution implementations (FD, FLB, NFLB, NFLB_i) based on the `DistType` enum.
+ */
+
 #include "qss/distributions.hpp"
-#include "impl.hpp"
 
 
 namespace qss
@@ -50,6 +57,23 @@ std::optional<Vec> distribution(const Vec &e_k,
         break;
     default:
         return std::nullopt;
+    }
+    return out;
+}
+
+std::optional<Mat> distribution(const Mat &e_k,
+                                double mu,
+                                double beta,
+                                DistType dist)
+{
+    const std::size_t rows = e_k.size();
+    Mat out(rows);
+    for (std::size_t i = 0; i < rows; ++i)
+    {
+        auto row_res = distribution(e_k[i], mu, beta, dist);
+        if (!row_res)
+            return std::nullopt;
+        out[i] = std::move(*row_res);
     }
     return out;
 }

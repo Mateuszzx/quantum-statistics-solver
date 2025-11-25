@@ -62,7 +62,6 @@ option(ENABLE_PY_MODULE "Build Python extension module (_qss)" ON)
 option(ENABLE_TESTING "Build C++ and Python tests" OFF)
 option(ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
 option(ENABLE_WARNINGS "Enable strict compiler warnings" OFF)
-option(ENABLE_OPENMP "Enable OpenMP parallelization" OFF)
 option(ENABLE_IPO "Enable interprocedural optimization (LTO)" OFF)
 option(BUILD_DOCS "Build documentation (Doxygen + Sphinx)" OFF)
 
@@ -85,7 +84,6 @@ message(STATUS "  Python module: ${ENABLE_PY_MODULE}")
 message(STATUS "  Testing:       ${ENABLE_TESTING}")
 message(STATUS "  Coverage:      ${ENABLE_COVERAGE}")
 message(STATUS "  Warnings:      ${ENABLE_WARNINGS}")
-message(STATUS "  OpenMP:        ${ENABLE_OPENMP}")
 message(STATUS "  IPO/LTO:       ${ENABLE_IPO}")
 message(STATUS "  Documentation: ${BUILD_DOCS}")
 message(STATUS "========================================")
@@ -105,12 +103,6 @@ endif()
 if(ENABLE_WARNINGS)
   include(Warnings)
   message(STATUS "Strict compiler warnings enabled")
-endif()
-
-# OpenMP support
-if(ENABLE_OPENMP)
-  find_package(OpenMP REQUIRED)
-  message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
 # ------------------------------------------------------------------------------
