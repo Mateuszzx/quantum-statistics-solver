@@ -137,9 +137,9 @@ TEST(ChemicalPotential, MultiN) {
     Mat E(N, Vec(N, 0.0));
     double beta = 1.0;
     Vec n_targets = {0.5, 1.0, 1.5};
-    
+
     CombinedSolverOptions opts;
-    
+
     auto results = chemical_potential_B_multi_n(
         DistType::FD,
         beta,
@@ -150,7 +150,7 @@ TEST(ChemicalPotential, MultiN) {
         opts,
         -10.0, 10.0, 0.0
     );
-    
+
     ASSERT_EQ(results.size(), 3);
     // For FD at T>0, n increases with mu.
     // n=1.0 -> mu=0 (half filling)
@@ -166,14 +166,14 @@ TEST(ChemicalPotential, SimulatedAnnealingSolver) {
     Mat E(N, Vec(N, 0.0));
     double beta = 1.0;
     double n_target = 1.0; // Expect mu=0
-    
+
     CombinedSolverOptions opts;
     opts.solver = SolverType::SimulatedAnnealing;
     opts.sa.max_iters = 2000;
     opts.sa.T0 = 1.0;
     opts.sa.step_sigma = 0.5;
     // SA minimizes |n(mu) - n_target|.
-    
+
     auto res = chemical_potential_B(
         DistType::FD,
         beta,
@@ -182,10 +182,10 @@ TEST(ChemicalPotential, SimulatedAnnealingSolver) {
         E,
         0.0, 2.0, QSS_MU_B_EV_PER_T,
         opts,
-        -5.0, 5.0, 
+        -5.0, 5.0,
         2.0 // Start away from 0
     );
-    
+
     EXPECT_TRUE(res.converged);
     EXPECT_NEAR(res.mu, 0.0, 0.2); // SA is approximate
 }
@@ -196,16 +196,16 @@ TEST(ChemicalPotential, FallbackScanPath) {
     // However, the fallback logic calls solve_root AGAIN with the same options.
     // So it will likely fail again.
     // But we can at least verify that the code executes the fallback path without crashing.
-    
+
     const std::size_t N = 4;
     Mat E(N, Vec(N, 0.0));
     double beta = 1.0;
     double n_target = 1.0;
-    
+
     CombinedSolverOptions opts;
     opts.solver = SolverType::Brent;
     opts.root.max_iters = 0; // Force failure
-    
+
     // This should fail, but we want to ensure it doesn't throw or crash
     auto res = chemical_potential_B(
         DistType::FD,
@@ -217,7 +217,7 @@ TEST(ChemicalPotential, FallbackScanPath) {
         opts,
         -5.0, 5.0, 0.0
     );
-    
+
     // If the fallback scan finds the exact root, it might actually converge!
     // So we just check that it runs safely.
     // In the previous run, it DID converge (res.converged == true).
@@ -229,4 +229,3 @@ TEST(ChemicalPotential, FallbackScanPath) {
         EXPECT_FALSE(res.converged);
     }
 }
-

@@ -21,10 +21,10 @@ namespace
 {
 /**
  * @brief Finds a root of a cubic polynomial in [0, 1].
- * 
+ *
  * Solves \f$ ((p_0 f + p_1) f + p_2) f + p_3 = 0 \f$ for \f$ f \in [0, 1] \f$.
  * Uses a robust bisection method.
- * 
+ *
  * @param p0 Coefficient of \f$ f^3 \f$.
  * @param p1 Coefficient of \f$ f^2 \f$.
  * @param p2 Coefficient of \f$ f^1 \f$.
@@ -86,13 +86,13 @@ inline bool find_root_on_unit_interval(double p0,
 
 /**
  * @brief Core calculation for Implicit Non-Fermi-Liquid distribution.
- * 
+ *
  * Solves the cubic equation:
  * \f[
  * e^x f^3 + (2e^x + 8) f^2 - 16 f + 8 = 0
  * \f]
  * for \f$ f \in [0, 1] \f$, then returns \f$ 2f \f$ (scaled to [0, 2]).
- * 
+ *
  * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
  * @return double Distribution value in [0, 2].
  */

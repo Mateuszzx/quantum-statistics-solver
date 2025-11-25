@@ -19,11 +19,9 @@ LatticeData = NDArray[np.floating] | float | int
 
 
 try:
-    from . import _qss
-
-    _QSS_AVAILABLE = True
-except ImportError:
-    _QSS_AVAILABLE = False
+    from . import _qss  # type: ignore[attr-defined]
+except ImportError as e:
+    raise ImportError("The _qss extension module is not available.") from e
 
 
 class DistType(Enum):
@@ -84,10 +82,6 @@ def prepare_2D_lattice_data(
 
 def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistType:
     """Convert distribution type to C++ DistType."""
-    if not _QSS_AVAILABLE:
-        raise RuntimeError(
-            "C++ extension _qss is not available. Please build the project first."
-        )
 
     if isinstance(dist_type, _qss.DistType):
         return dist_type
@@ -105,16 +99,13 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
 
     if dist_type not in dist_map:
         raise ValueError(
-            f"Invalid distribution type: {dist_type}. "
-            f"Must be one of {list(dist_map.keys())}"
+            f"Invalid distribution type: {dist_type}. " f"Must be one of {list(dist_map.keys())}"
         )
 
     return dist_map[dist_type]
 
 
-def distribution(
-    e_k: np.ndarray, mu: float, beta: float, dist_type: str | DistType
-) -> np.ndarray:
+def distribution(e_k: np.ndarray, mu: float, beta: float, dist_type: str | DistType) -> np.ndarray:
     """
     Compute distribution values for given energies using specified distribution type.
 
@@ -158,13 +149,9 @@ def distribution(
     cpp_dist_type = _get_cpp_dist_type(dist_type)
 
     if e_k.ndim == 1:
-        return cast(
-            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k)
-        )
+        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k))
     if e_k.ndim == 2:
-        return cast(
-            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k)
-        )
+        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k))
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 
 

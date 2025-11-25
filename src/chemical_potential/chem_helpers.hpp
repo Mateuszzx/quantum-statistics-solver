@@ -7,14 +7,14 @@ namespace qss::chem {
 
 /**
  * @brief Computes the total occupation (sum over spins) for the given parameters.
- * 
+ *
  * @param E Energy grid 2D (ny rows x nx columns).
  * @param mu Chemical potential.
  * @param beta Inverse temperature.
  * @param dist Distribution type (FD/FLB/NFLB/...).
  * @param delta Zeeman shift (g*muB*H/2) in energy units.
  * @return Mat Total distribution matrix.
- * 
+ *
  * Principle:
  * - For delta == 0: No spin splitting -> F = f(E)
  * - For delta != 0: Spin splitting -> F = f(E - delta) + f(E + delta)

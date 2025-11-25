@@ -52,7 +52,7 @@ class OptimizationSolver
 public:
     /**
      * @brief Construct a new Optimization Solver.
-     * 
+     *
      * @param opts Solver configuration options.
      */
     explicit OptimizationSolver(const CombinedSolverOptions &opts = {})
@@ -63,7 +63,7 @@ public:
     // configuration
     /**
      * @brief Update the full set of options.
-     * 
+     *
      * @param o New options.
      */
     void set_options(const CombinedSolverOptions &o)
@@ -74,17 +74,17 @@ public:
 
     /**
      * @brief Set the solver algorithm type.
-     * 
+     *
      * @param t Solver type.
      */
     void set_solver_type(SolverType t) noexcept
     {
         opts_.solver = t;
     }
-    
+
     /**
      * @brief Configure the bracketer.
-     * 
+     *
      * @param t Bracketer type.
      * @param o Bracketer options.
      */
@@ -97,7 +97,7 @@ public:
 
     /**
      * @brief Set options specific to root finding.
-     * 
+     *
      * @param o Root solver options.
      */
     void set_root_options(const RootSolverOptions &o) noexcept
@@ -107,7 +107,7 @@ public:
 
     /**
      * @brief Set options specific to Simulated Annealing.
-     * 
+     *
      * @param o SA options.
      */
     void set_sa_options(const SimulatedAnnealingOptions &o) noexcept
@@ -117,8 +117,8 @@ public:
 
     /**
      * @brief Get the current options.
-     * 
-     * @return const CombinedSolverOptions& 
+     *
+     * @return const CombinedSolverOptions&
      */
     const CombinedSolverOptions &options() const noexcept
     {
@@ -127,8 +127,8 @@ public:
 
     /**
      * @brief Get the internal bracketer instance.
-     * 
-     * @return const Bracketer& 
+     *
+     * @return const Bracketer&
      */
     const Bracketer &bracketer() const noexcept
     {
@@ -138,7 +138,7 @@ public:
     // ROOT-FINDING (bisection/secant/brent)
     /**
      * @brief Solve for a root f(x) = 0 in the interval [a0, b0].
-     * 
+     *
      * @param f The function to solve.
      * @param a0 Initial lower bound.
      * @param b0 Initial upper bound.
@@ -151,10 +151,10 @@ public:
     // - else -> root-find f(x)=0 on [a0,b0] and return root (NaN on failure)
     /**
      * @brief Unified scalar solver interface.
-     * 
+     *
      * If the solver type is SimulatedAnnealing, this minimizes |f(x)| starting at x0.
      * Otherwise, it finds a root f(x) = 0 in [a0, b0].
-     * 
+     *
      * @param f The function to solve or minimize.
      * @param a0 Lower bound (for root finding).
      * @param b0 Upper bound (for root finding).
@@ -169,7 +169,7 @@ public:
     // MINIMIZATION (Simulated Annealing)
     /**
      * @brief Minimize a 1D function using the configured solver (e.g., SA).
-     * 
+     *
      * @param g The objective function to minimize.
      * @param x0 Initial guess.
      * @return MinResult Optimization result.
@@ -178,7 +178,7 @@ public:
 
     /**
      * @brief Minimize an N-dimensional function using the configured solver (e.g., SA).
-     * 
+     *
      * @param g The objective function to minimize.
      * @param x0 Initial guess vector.
      * @return MinResult Optimization result.

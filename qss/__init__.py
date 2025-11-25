@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 # Import extension module first to avoid circular import
-from . import _qss
+try:
+    from . import _qss  # type: ignore[attr-defined]
+except ImportError as e:
+    raise ImportError("The _qss extension module is not available.") from e
 from .chemical_potential import chemical_potential
 from .distributions import DistType, prepare_2D_lattice_data
 from .energy import energy

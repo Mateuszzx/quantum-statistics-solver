@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #include "qss/chemical_potential.hpp"
-#include "chem_helpers.hpp" 
+#include "chem_helpers.hpp"
 #include "qss/math_utils.hpp"
 #include "qss/solver.hpp"
 

@@ -17,10 +17,10 @@ namespace
 {
 /**
  * @brief Core calculation for Fermi-Dirac distribution.
- * 
+ *
  * Computes \f$ f(x) = \frac{2}{e^x + 1} \f$ where \f$ x = \beta(E - \mu) \f$.
  * Handles numerical stability for large positive and negative x.
- * 
+ *
  * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
  * @return double Distribution value in [0, 2].
  */

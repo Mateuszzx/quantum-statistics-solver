@@ -90,7 +90,7 @@ static double simple_root_func(double x) { return x * x - 4.0; } // Roots at +/-
 TEST(SolverTest, SolveRoot_UnsupportedSolver) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::SimulatedAnnealing); // Not a root solver
-    
+
     auto result = solver.solve_root(simple_root_func, 0.0, 5.0);
     EXPECT_EQ(result.status, Status::Unsupported);
 }
@@ -98,9 +98,9 @@ TEST(SolverTest, SolveRoot_UnsupportedSolver) {
 TEST(SolverTest, SolveRoot_DomainError_InfiniteBounds) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::Bisection);
-    
+
     double inf = std::numeric_limits<double>::infinity();
-    
+
     auto result1 = solver.solve_root(simple_root_func, -inf, 5.0);
     EXPECT_EQ(result1.status, Status::DomainError);
 
@@ -111,14 +111,14 @@ TEST(SolverTest, SolveRoot_DomainError_InfiniteBounds) {
 TEST(SolverTest, SolveRoot_MaxIterations_Bisection) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::Bisection);
-    
+
     SolverOptions root_opts;
     root_opts.max_iters = 1; // Too few to converge
     root_opts.rel_tol = 1e-15;
     root_opts.abs_tol = 1e-15;
     solver.set_root_options(root_opts);
 
-    // Root is at 2.0. Bracket [0, 5]. Midpoint 2.5. 
+    // Root is at 2.0. Bracket [0, 5]. Midpoint 2.5.
     // 1 iteration won't reach tolerance.
     auto result = solver.solve_root(simple_root_func, 0.0, 5.0);
     EXPECT_EQ(result.status, Status::MaxIterations);
@@ -127,9 +127,9 @@ TEST(SolverTest, SolveRoot_MaxIterations_Bisection) {
 TEST(SolverTest, SolveRoot_MaxIterations_Brent) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::Brent);
-    
+
     SolverOptions root_opts;
-    root_opts.max_iters = 1; 
+    root_opts.max_iters = 1;
     root_opts.rel_tol = 1e-15;
     root_opts.abs_tol = 1e-15;
     solver.set_root_options(root_opts);
@@ -141,7 +141,7 @@ TEST(SolverTest, SolveRoot_MaxIterations_Brent) {
 TEST(SolverTest, Minimize_UnsupportedSolver) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::Bisection); // Not a minimizer
-    
+
     auto result = solver.minimize(simple_parabola, 2.5);
     EXPECT_EQ(result.status, Status::Unsupported);
 }
@@ -150,11 +150,11 @@ TEST(BracketerTest, MaxIterations) {
     BracketerOptions opts;
     opts.max_expands = 1; // Very few expands
     Bracketer bracketer(BracketerType::Expansion, opts);
-    
+
     // Start with a small interval that doesn't bracket the root (root at 2.0)
     // [0.1, 0.2] -> f(0.1) < 0, f(0.2) < 0. Needs expansion.
     auto res = bracketer.bracket(simple_root_func, 0.1, 0.2);
-    
+
     // It might fail to find bracket in 1 step
     // If it fails, valid should be false
     if (!res.valid) {
@@ -164,4 +164,3 @@ TEST(BracketerTest, MaxIterations) {
         EXPECT_LE(res.fa * res.fb, 0.0);
     }
 }
-

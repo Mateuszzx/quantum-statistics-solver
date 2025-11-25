@@ -41,7 +41,7 @@ class Bracketer
 public:
     /**
      * @brief Construct a new Bracketer object.
-     * 
+     *
      * @param type The bracketing strategy to use.
      * @param opts Configuration options.
      */
@@ -52,18 +52,18 @@ public:
 
     /**
      * @brief Set the options object.
-     * 
+     *
      * @param o New options.
      */
     void set_options(const BracketerOptions &o) noexcept
     {
         opts_ = o;
     }
-    
+
     /**
      * @brief Get the current options.
-     * 
-     * @return const BracketerOptions& 
+     *
+     * @return const BracketerOptions&
      */
     const BracketerOptions &options() const noexcept
     {
@@ -72,8 +72,8 @@ public:
 
     /**
      * @brief Get the bracketing strategy type.
-     * 
-     * @return BracketerType 
+     *
+     * @return BracketerType
      */
     BracketerType type() const noexcept
     {
@@ -82,7 +82,7 @@ public:
 
     /**
      * @brief Attempt to find a valid bracket for function f starting near [a0, b0].
-     * 
+     *
      * @param f The function to bracket.
      * @param a0 Initial lower bound guess.
      * @param b0 Initial upper bound guess.

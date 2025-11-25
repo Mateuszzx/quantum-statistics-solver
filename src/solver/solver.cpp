@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
-#include <iostream> 
+#include <iostream>
 
 
 namespace qss
@@ -172,7 +172,7 @@ RootResult OptimizationSolver::solve_root(const Function1D &f,
         {
             bool v = (fa * fb <= 0.0) || (std::abs(fa) <= atol) || (std::abs(fb) <= atol);
             R.root = b; R.froot = fb; R.final_bracket = {a,b,fa,fb,v};
-             
+
             R.status = Status::MaxIterations; return R;
         }
     }

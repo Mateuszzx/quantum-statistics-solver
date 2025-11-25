@@ -384,4 +384,3 @@ $ n = {n_i}$"""
 
         if ylims is not None:
             ax_flat[j].set_ylim(ylims)
-

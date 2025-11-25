@@ -19,13 +19,13 @@ namespace
 {
 /**
  * @brief Core calculation for Non-Fermi-Liquid distribution.
- * 
+ *
  * Computes the distribution function derived from a specific spin-liquid ansatz:
  * \f[
  * f(x) = \frac{e^x - \sqrt{e^{2x} + 8e^x} + 8}{e^x + 8}
  * \f]
  * where \f$ x = \beta(E - \mu) \f$.
- * 
+ *
  * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
  * @return double Distribution value in [0, 1].
  */

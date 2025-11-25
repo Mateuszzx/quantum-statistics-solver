@@ -7,7 +7,11 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from . import _qss
+try:
+    from . import _qss  # type: ignore[attr-defined]
+except ImportError as e:
+    raise ImportError("The _qss extension module is not available.") from e
+
 from .distributions import DistType as PyDistType
 
 

@@ -1,7 +1,7 @@
 /**
  * @file distributions.hpp
  * @brief Defines statistical distribution functions for quantum systems.
- * 
+ *
  * This file contains the definitions for various statistical distributions used
  * in quantum statistics calculations, including Fermi-Dirac and non-Fermi-liquid
  * variants. It provides a unified interface via the `distribution` function
@@ -30,7 +30,7 @@ enum class DistType
 
 /**
  * @brief Calculate the distribution function value for a single energy state.
- * 
+ *
  * @param e_k Energy of the state.
  * @param mu Chemical potential.
  * @param beta Inverse temperature (1/kT).
@@ -44,7 +44,7 @@ std::optional<double> distribution(double e_k,
 
 /**
  * @brief Calculate the distribution function for a vector of energy states.
- * 
+ *
  * @param e_k Vector of energy states.
  * @param mu Chemical potential.
  * @param beta Inverse temperature (1/kT).
@@ -58,7 +58,7 @@ std::optional<Vec> distribution(const Vec &e_k,
 
 /**
  * @brief Calculate the distribution function for a 2D matrix of energy states.
- * 
+ *
  * @param e_k Matrix of energy states.
  * @param mu Chemical potential.
  * @param beta Inverse temperature (1/kT).

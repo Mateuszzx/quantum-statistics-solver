@@ -66,4 +66,3 @@ void bind_solver(nb::module_ &m)
 }
 
 } // namespace qss_bindings
-

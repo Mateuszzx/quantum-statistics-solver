@@ -50,40 +50,40 @@ TEST(SimulatedAnnealingTest, BoundsReflect)
 TEST(SimulatedAnnealingTest, SolveScalarDispatch) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::SimulatedAnnealing);
-    
+
     SimulatedAnnealingOptions sa_opts;
     sa_opts.T0 = 1.0;
     sa_opts.max_iters = 1000;
     sa_opts.step_sigma = 0.5;
     solver.set_sa_options(sa_opts);
-    
+
     // Minimizing (x-2)^2, minimum at x=2
     // solve_scalar with SA performs minimization
     double result = solver.solve_scalar(shifted_parabola, 0.0, 5.0, 2.5);
-    
+
     // Result should be close to 2.0
-    EXPECT_NEAR(result, 2.0, 0.1); 
+    EXPECT_NEAR(result, 2.0, 0.1);
 }
 
 TEST(SimulatedAnnealingTest, MinimizeND_Simple) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::SimulatedAnnealing);
-    
+
     SimulatedAnnealingOptions sa_opts;
     sa_opts.max_iters = 5000;
     sa_opts.T0 = 10.0;
     sa_opts.step_sigma = 2.0; // Larger steps
     sa_opts.step_decay = 0.999; // Slow decay
     solver.set_sa_options(sa_opts);
-    
+
     // Minimize x^2 + y^2
     ObjectiveND func = [](const std::vector<double>& x) {
         return x[0]*x[0] + x[1]*x[1];
     };
-    
+
     std::vector<double> x0 = {5.0, -5.0};
     auto result = solver.minimize(func, x0);
-    
+
     EXPECT_EQ(result.status, Status::Converged);
     EXPECT_NEAR(result.f_best, 0.0, 0.5); // Looser tolerance
     EXPECT_NEAR(result.x_best[0], 0.0, 0.5);
@@ -93,10 +93,10 @@ TEST(SimulatedAnnealingTest, MinimizeND_Simple) {
 TEST(SimulatedAnnealingTest, MinimizeND_EmptyX0) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::SimulatedAnnealing);
-    
+
     ObjectiveND func = [](const std::vector<double>& x) { return 0.0; };
     std::vector<double> x0; // Empty
-    
+
     auto result = solver.minimize(func, x0);
     EXPECT_EQ(result.status, Status::DomainError);
 }
@@ -104,10 +104,10 @@ TEST(SimulatedAnnealingTest, MinimizeND_EmptyX0) {
 TEST(SimulatedAnnealingTest, CoolingSchedules) {
     OptimizationSolver solver;
     solver.set_solver_type(SolverType::SimulatedAnnealing);
-    
+
     SimulatedAnnealingOptions sa_opts;
     sa_opts.max_iters = 100;
-    
+
     // Linear
     sa_opts.sched = CoolingSchedule::Linear;
     solver.set_sa_options(sa_opts);
@@ -129,15 +129,15 @@ TEST(SimulatedAnnealingTest, BoundsClamp) {
     opts.bounds = {{-1.0, 1.0}}; // 1D bounds
     opts.T0 = 50.0;
     opts.step_sigma = 2.0; // Large steps to hit bounds easily
-    
+
     // Function that decreases as x goes to +infinity, so it pushes against upper bound
     ObjectiveND func = [](const std::vector<double>& x) {
-        return -x[0]; 
+        return -x[0];
     };
-    
+
     std::vector<double> x0 = {0.0};
     auto result = sa_minimize_impl(func, x0, opts);
-    
+
     // Should be clamped at 1.0
     EXPECT_NEAR(result.x_best[0], 1.0, 1e-2);
 }
@@ -146,16 +146,16 @@ TEST(SimulatedAnnealingTest, InfiniteFunction) {
     SimulatedAnnealingOptions opts;
     opts.max_iters = 50;
     opts.T0 = 1.0;
-    
+
     // Function returns infinity sometimes
     ObjectiveND func = [](const std::vector<double>& x) {
         if (std::abs(x[0]) < 0.5) return std::numeric_limits<double>::infinity();
         return x[0]*x[0];
     };
-    
+
     std::vector<double> x0 = {2.0};
     auto result = sa_minimize_impl(func, x0, opts);
-    
+
     // Should not crash, should find a valid minimum (likely near original if blocked)
     EXPECT_TRUE(std::isfinite(result.f_best));
 }
@@ -163,14 +163,14 @@ TEST(SimulatedAnnealingTest, InfiniteFunction) {
 TEST(SimulatedAnnealingTest, InitialInfinite) {
     SimulatedAnnealingOptions opts;
     opts.max_iters = 10;
-    
+
     // Initial point is infinite
     ObjectiveND func = [](const std::vector<double>& x) {
         return std::numeric_limits<double>::infinity();
     };
-    
+
     std::vector<double> x0 = {0.0};
     auto result = sa_minimize_impl(func, x0, opts);
-    
+
     EXPECT_EQ(result.status, Status::DomainError);
 }

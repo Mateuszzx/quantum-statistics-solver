@@ -24,9 +24,9 @@ struct ChemicalPotentialResult
 
 /**
  * @brief Calculate chemical potential for a single set of parameters.
- * 
+ *
  * Solves for mu such that the total particle density equals n_assumed.
- * 
+ *
  * @param dist Distribution type (FD, FLB, NFLB, etc.).
  * @param beta Inverse temperature (1/k_B T).
  * @param n_assumed Target particle density (filling factor).
@@ -58,7 +58,7 @@ ChemicalPotentialResult chemical_potential_B(
 
 /**
  * @brief Calculate chemical potential for a vector of inverse temperatures (betas).
- * 
+ *
  * @param dist Distribution type.
  * @param betas Vector of inverse temperatures.
  * @param n_assumed Target particle density.
@@ -89,7 +89,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
 
 /**
  * @brief Calculate chemical potential for a vector of target densities (n).
- * 
+ *
  * @param dist Distribution type.
  * @param beta Inverse temperature.
  * @param n_assumed_values Vector of target particle densities.

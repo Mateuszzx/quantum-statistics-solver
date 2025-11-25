@@ -1,7 +1,7 @@
 /**
  * @file distributions.cpp
  * @brief Dispatch logic for statistical distributions.
- * 
+ *
  * Implements the main `distribution` function overloads that dispatch to specific
  * distribution implementations (FD, FLB, NFLB, NFLB_i) based on the `DistType` enum.
  */

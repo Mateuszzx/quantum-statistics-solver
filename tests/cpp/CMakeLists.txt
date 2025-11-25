@@ -28,7 +28,7 @@ add_executable(qss_tests
   test_distribution_total.cpp
 )
 
-# C++ standard and warnings (re-use your warnings target if present)
+# C++ standard and warnings (reuse your warnings target if present)
 target_compile_features(qss_tests PRIVATE cxx_std_17)
 if (TARGET project_warnings)
   target_link_libraries(qss_tests PRIVATE project_warnings)

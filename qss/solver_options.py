@@ -10,7 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from . import _qss
+try:
+    from . import _qss  # type: ignore[attr-defined]
+except ImportError as e:
+    raise ImportError("The _qss extension module is not available.") from e
 
 # ----------------------------
 # Public Python-side Enums

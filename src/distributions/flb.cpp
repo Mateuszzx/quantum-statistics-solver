@@ -17,10 +17,10 @@ namespace
 {
 /**
  * @brief Core calculation for Fermi-Liquid-Like distribution.
- * 
+ *
  * Computes \f$ f(x) = \frac{2}{e^x + 2} \f$ where \f$ x = \beta(E - \mu) \f$.
  * This distribution arises in certain spin liquid models.
- * 
+ *
  * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
  * @return double Distribution value in [0, 2].
  */

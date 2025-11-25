@@ -44,7 +44,7 @@ struct SimulatedAnnealingOptions
 // Declare SA entry point used by OptimizationSolver
 /**
  * @brief Internal implementation of Simulated Annealing minimization.
- * 
+ *
  * @param g The objective function.
  * @param x0 Initial guess.
  * @param o SA options.
