@@ -87,6 +87,6 @@ def test_entropy_flat_columns(sample_energy_matrix):
 def test_entropy_malformed_dataframe(sample_energy_matrix):
     # DataFrame missing required index/columns
     df = pd.DataFrame({"wrong_col": [1, 2, 3]})
-    
+
     with pytest.raises(ValueError, match="Input DataFrame must have"):
         entropy(df, sample_energy_matrix)

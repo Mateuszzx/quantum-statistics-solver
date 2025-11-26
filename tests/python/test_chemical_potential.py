@@ -52,7 +52,7 @@ class TestChemicalPotential:
         assert len(df) == 2
         assert list(df.columns) == ["mu", "iterations", "converged", "residual"]
         assert df.index.names == ["distro", "n", "k_BT", "H_a"]
-        
+
         # Check index values
         assert df.index[0] == ("FD", 0.4, 1.0, 0.0)
         assert df.index[1] == ("FD", 0.6, 1.0, 0.0)
@@ -68,7 +68,7 @@ class TestChemicalPotential:
         # No, backend is vectorized over n.
         # Loops: distros -> betas -> H_a.
         # Inside: call backend (handles all n).
-        
+
         mock_calc.return_value = [(0.0, 0, True, 0.0)] # 1 n_val
 
         E = np.zeros((2, 2))
@@ -93,11 +93,11 @@ class TestChemicalPotential:
     def test_chemical_potential_with_solver_options(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
         E = np.zeros((2, 2))
-        
+
         # Create custom solver options
         from qss.solver_options import SolverOptions, CombinedSolverOptions
         opts = CombinedSolverOptions(root=SolverOptions(abs_tol=1e-9))
-        
+
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
@@ -106,7 +106,7 @@ class TestChemicalPotential:
             E=E,
             solver_opts=opts
         )
-        
+
         # Verify that the options were passed to the backend
         # The 9th argument to chemical_potential_B_multi_n is solver_opts
         args, _ = mock_calc.call_args
@@ -118,7 +118,7 @@ class TestChemicalPotential:
     def test_chemical_potential_single_distro_string(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
         E = np.zeros((2, 2))
-        
+
         df = chemical_potential(
             distros="FD", # Single string instead of list
             n_vals=[0.5],
@@ -126,7 +126,7 @@ class TestChemicalPotential:
             H_a_vals=[0.0],
             E=E
         )
-        
+
         assert len(df) == 1
         assert df.index[0][0] == "FD"
 
@@ -134,7 +134,7 @@ class TestChemicalPotential:
     def test_chemical_potential_custom_N(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
         E = np.zeros((2, 2))
-        
+
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
@@ -143,7 +143,7 @@ class TestChemicalPotential:
             E=E,
             N=100 # Custom system size
         )
-        
+
         # Verify N was passed correctly (4th argument)
         args, _ = mock_calc.call_args
         assert args[3] == 100
@@ -172,11 +172,11 @@ class TestChemicalPotential:
     def test_chemical_potential_native_solver_opts(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
         E = np.zeros((2, 2))
-        
+
         # Create native solver options directly
         native_opts = _qss.CombinedSolverOptions()
         native_opts.root.abs_tol = 1e-7
-        
+
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
@@ -185,9 +185,8 @@ class TestChemicalPotential:
             E=E,
             solver_opts=native_opts
         )
-        
+
         args, _ = mock_calc.call_args
         passed_opts = args[8]
         assert passed_opts is native_opts
         assert passed_opts.root.abs_tol == pytest.approx(1e-7)
-

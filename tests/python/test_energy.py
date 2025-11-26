@@ -35,14 +35,14 @@ def test_energy_calculation_ha_zero(sample_dataframe, sample_energy_matrix):
     # Mock distribution to return all ones
     with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)) as mock_dist:
         df_result = energy(sample_dataframe.iloc[[0]], sample_energy_matrix)
-        
+
         assert "energy" in df_result.columns
         assert "free_energy" in df_result.columns
-        
+
         # If n=1 everywhere, avg energy = mean(E * 1) = mean([1,2,3,4]) = 2.5
         expected_energy = 2.5
         assert df_result["energy"].iloc[0] == pytest.approx(expected_energy)
-        
+
         # Free energy = E - T*S = 2.5 - 1.0 * 0.5 = 2.0
         assert df_result["free_energy"].iloc[0] == pytest.approx(2.0)
 
@@ -51,31 +51,31 @@ def test_energy_calculation_ha_nonzero(sample_dataframe, sample_energy_matrix):
     # Mock distribution to return all ones (so n_up = 0.5, n_down = 0.5)
     with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)) as mock_dist:
         df_result = energy(sample_dataframe.iloc[[1]], sample_energy_matrix)
-        
+
         # H_a = 1.0
         # delta = 0.5 * g * muB * H_a
         # E_up = E - delta
         # E_down = E + delta
         # n_up = 1/2, n_down = 1/2
         # avg = mean( (E-delta)*0.5 + (E+delta)*0.5 ) = mean( 0.5E - 0.5delta + 0.5E + 0.5delta ) = mean(E)
-        
+
         expected_energy = 2.5
         assert df_result["energy"].iloc[0] == pytest.approx(expected_energy)
 
 def test_energy_calculates_entropy_if_missing(sample_dataframe_no_entropy, sample_energy_matrix):
     with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)), \
          patch("qss.energy.calculate_entropy") as mock_entropy:
-        
+
         # Mock entropy to return df with entropy column
         def side_effect(df, *args, **kwargs):
             df_out = df.copy()
             df_out["entropy"] = [0.7]
             return df_out
-        
+
         mock_entropy.side_effect = side_effect
-        
+
         df_result = energy(sample_dataframe_no_entropy, sample_energy_matrix)
-        
+
         mock_entropy.assert_called_once()
         assert "entropy" in df_result.columns
         assert df_result["entropy"].iloc[0] == 0.7
@@ -91,7 +91,7 @@ def test_energy_flat_columns(sample_energy_matrix):
         "mu": [0.1],
         "entropy": [0.5]
     })
-    
+
     with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)):
         df_result = energy(df, sample_energy_matrix)
         assert "energy" in df_result.columns
@@ -103,7 +103,6 @@ def test_energy_malformed_dataframe(sample_energy_matrix):
         "wrong_col": [1, 2, 3],
         "entropy": [0.1, 0.2, 0.3]
     })
-    
+
     with pytest.raises(ValueError, match="Input DataFrame must have"):
         energy(df, sample_energy_matrix)
-

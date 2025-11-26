@@ -175,12 +175,12 @@ def test_sa_options_from_qss_zero_seed():
     nb.scale_sigma_by_T = True
     nb.bounds = [(-1.0, 1.0)]
     nb.reflect_bounds = True
-    
+
     # Case 1: seed = 0
     nb.seed = 0
     py = SimulatedAnnealingOptions.from_qss(nb)
     assert py.seed is None
-    
+
     # Case 2: seed = -1
     nb.seed = -1
     py = SimulatedAnnealingOptions.from_qss(nb)
@@ -193,22 +193,21 @@ def test_to_qss_runtime_error_when_module_missing():
     with patch("qss.solver_options._qss", None):
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             SolverOptions().to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             BracketerOptions().to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             SimulatedAnnealingOptions().to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             CombinedSolverOptions().to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             SolverType.Brent.to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             BracketerType.Expansion.to_qss()
-            
+
         with pytest.raises(RuntimeError, match="C\\+\\+ extension not available"):
             CoolingSchedule.Linear.to_qss()
-

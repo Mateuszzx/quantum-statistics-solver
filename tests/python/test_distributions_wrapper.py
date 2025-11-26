@@ -17,7 +17,7 @@ class TestDistributionWrapper:
         assert _get_cpp_dist_type("FD") == _qss.DistType.FD
         assert _get_cpp_dist_type(DistType.FD) == _qss.DistType.FD
         assert _get_cpp_dist_type(_qss.DistType.FD) == _qss.DistType.FD
-        
+
         with pytest.raises(ValueError):
             _get_cpp_dist_type("INVALID")
 
@@ -45,4 +45,3 @@ class TestDistributionWrapper:
         for dt in ["FD", "FLB", "NFLB", "NFLB_i"]:
             res = distribution(e_k, 0.0, 1.0, dt)
             assert res.shape == (1,)
-

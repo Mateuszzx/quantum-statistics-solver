@@ -337,7 +337,7 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
         # Plotting each distribution
         for i, distro in enumerate(distros):
             d_label = distro.name if hasattr(distro, "name") else str(distro)
-            
+
             try:
                 subset = results.xs((d_label, n_i, H_a), level=["distro", "n", "H_a"])
                 subset = subset.sort_index()
@@ -442,7 +442,7 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
         # Plotting each distribution
         for i, distro in enumerate(distros):
             d_label = distro.name if hasattr(distro, "name") else str(distro)
-            
+
             try:
                 # Select data for specific distro, n, k_BT
                 # Index is (distro, n, k_BT, H_a)
@@ -545,44 +545,44 @@ def plot_3d_results(
     """
     num_rows = len(row_vals)
     num_cols = len(distros)
-    
+
     fig = plt.figure(figsize=(figsize[0], figsize[1] * num_rows))
-    
+
     for i, r_val in enumerate(row_vals):
         for j, distro in enumerate(distros):
             d_label = distro.name if hasattr(distro, "name") else str(distro)
-            
+
             try:
                 # Filter by distro
                 df_d = results.xs(d_label, level="distro", drop_level=False)
-                
+
                 # Filter by row_param value
-                # Note: This requires exact float match. 
+                # Note: This requires exact float match.
                 # If issues arise, we might need nearest match or tolerance.
                 df_r = df_d.xs(r_val, level=row_param, drop_level=False)
-                
+
                 # Reset index to make pivoting easy
                 data = df_r.reset_index()
-                
+
                 # Pivot
                 pivot = data.pivot(index=y_param, columns=x_param, values=z_col)
-                
+
                 X_vals = pivot.columns.values
                 Y_vals = pivot.index.values
                 X, Y = np.meshgrid(X_vals, Y_vals)
                 Z = pivot.values
-                
+
                 # Add subplot
                 ax = fig.add_subplot(num_rows, num_cols, i * num_cols + j + 1, projection='3d')
-                
-                surf = ax.plot_surface(X, Y, Z, cmap=cmap, edgecolor='none', alpha=0.9)
-                
 
-                ax.set_xlabel(x_param, fontsize=fontsize)    
+                surf = ax.plot_surface(X, Y, Z, cmap=cmap, edgecolor='none', alpha=0.9)
+
+
+                ax.set_xlabel(x_param, fontsize=fontsize)
                 ax.set_ylabel(y_param, fontsize=fontsize)
                 ax.set_zlabel(z_label, fontsize=fontsize)
                 ax.set_title(f"{d_label}, {row_param}={r_val:.3g}", fontsize=fontsize)
-                
+
             except Exception as e:
                 print(f"Error plotting {d_label}, {row_param}={r_val}: {e}")
                 # Add empty plot to maintain grid
@@ -626,7 +626,7 @@ def plot_3d_results_interactive(
 
     num_rows = len(row_vals)
     num_cols = len(distros)
-    
+
     # Create subplot titles
     subplot_titles = []
     for r_val in row_vals:
@@ -645,34 +645,34 @@ def plot_3d_results_interactive(
     for i, r_val in enumerate(row_vals):
         for j, distro in enumerate(distros):
             d_label = distro.name if hasattr(distro, "name") else str(distro)
-            
+
             try:
                 # Filter by distro
                 df_d = results.xs(d_label, level="distro", drop_level=False)
-                
+
                 # Filter by row_param value
                 df_r = df_d.xs(r_val, level=row_param, drop_level=False)
-                
+
                 # Reset index to make pivoting easy
                 data = df_r.reset_index()
-                
+
                 # Pivot
                 pivot = data.pivot(index=y_param, columns=x_param, values=z_col)
-                
+
                 X = pivot.columns.values
                 Y = pivot.index.values
                 Z = pivot.values
-                
+
                 # Add surface trace
                 fig.add_trace(
                     go.Surface(x=X, y=Y, z=Z, colorscale='Viridis', showscale=False),
                     row=i + 1, col=j + 1
                 )
-                
+
                 # Update scene labels
                 scene_num = i * num_cols + j + 1
                 scene_name = 'scene' if scene_num == 1 else f'scene{scene_num}'
-                
+
                 fig.update_layout({
                     scene_name: {
                         'xaxis_title': x_param,
