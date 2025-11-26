@@ -35,7 +35,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
@@ -72,6 +71,7 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-xdist>=3.3.0",
+    "plotly">=6.5.0",
     "black>=23.0.0",         # code formatter
     "ruff>=0.1.0",           # fast linter
     "mypy>=1.5.0",           # type checker

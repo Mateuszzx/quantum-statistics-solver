@@ -4,65 +4,117 @@
 [![codecov](https://codecov.io/gh/YOUR_USERNAME/quantum-statistics-solver/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/quantum-statistics-solver)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-High-performance library for quantum statistics calculations.
+High-performance library for quantum statistics calculations, focusing on strongly correlated electron systems.
 
-## Quick Start
+## Features
+
+- **Distributions**: Fermi-Dirac (FD), Fermi Liquid with Boltzmann (FLB), Non-Fermi Liquid with Boltzmann (NFLB).
+- **Thermodynamics**: Efficient calculation of Chemical Potential ($\mu$), Entropy ($S$), and Energy ($E$).
+- **Solvers**: Robust root-finding (Brent's method) and global optimization (Simulated Annealing) for solving $\mu(n)$.
+- **Performance**: Core logic implemented in C++17 for speed, exposed to Python via `nanobind`.
+- **Visualization**: Built-in plotting tools for scientific publication-quality figures.
+
+## Installation
+
+### Prerequisites
+- C++17 compatible compiler
+- CMake >= 3.15
+- Python >= 3.8
+
+### Install from Source
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/quantum-statistics-solver.git
+git clone https://github.com/Mateuszzx/quantum-statistics-solver.git
 cd quantum-statistics-solver
-
-# Set up development environment
-make dev-install
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Build and test
-make build
-make test
-
-# Run quality checks
-make check-all
+pip install -e .
 ```
 
-## Development Tools
+## Usage
 
-This project uses modern development tools configured in `pyproject.toml`:
+### Python API
 
-| Tool | Purpose | Command | Config |
-|------|---------|---------|--------|
-| **pytest** | Test runner | `make test-python` | `[tool.pytest]` |
-| **coverage** | Code coverage | `make coverage-python` | `[tool.coverage]` |
-| **ruff** | Fast linter | `make lint-python` | `[tool.ruff]` |
-| **black** | Code formatter | `make format-python` | `[tool.black]` |
-| **mypy** | Type checker | `make typecheck-python` | `[tool.mypy]` |
-| **codespell** | Spell checker | `make codespell` | `[tool.codespell]` |
-| **pre-commit** | Git hooks | `make precommit-install` | `.pre-commit-config.yaml` |
+Calculate chemical potential for different distributions:
 
-### Code Coverage
+```python
+import numpy as np
+from qss import chemical_potential, DistType
+from qss.distributions import prepare_2D_lattice_data
 
-Coverage reports are generated for both C++ and Python code:
+# 1. Setup Lattice
+N = 100
+kx = np.linspace(-np.pi, np.pi, N)
+ky = np.linspace(-np.pi, np.pi, N)
+e_k, _, _ = prepare_2D_lattice_data(kx, ky, t=-1.0, t_prim=0.25)
+
+# 2. Define Parameters
+n_vals = np.linspace(0.1, 0.9, 20)
+beta_vals = [10.0, 20.0] # 1/kBT
+H_a_vals = [0.0]         # Magnetic field
+
+# 3. Calculate Chemical Potential
+df = chemical_potential(
+    distros=[DistType.FD, DistType.FLB],
+    n_vals=n_vals,
+    beta_vals=beta_vals,
+    H_a_vals=H_a_vals,
+    E=e_k
+)
+
+print(df.head())
+```
+
+### Plotting
+
+Use the included scientific plotting tools:
+
+```python
+import tools.scientific_plot as sp
+import matplotlib.pyplot as plt
+
+# Plot Entropy vs Temperature
+sp.plot_results_temperature(
+    results=df,
+    n=[0.5, 0.8],
+    betas=beta_vals,
+    y_label=r"$\mu$",
+    distros=["FD", "FLB"]
+)
+plt.show()
+```
+
+## Development
+
+This project uses a `Makefile` to manage development tasks.
+
+### Setup
 
 ```bash
-# Generate coverage reports
-make coverage-all
-
-# View reports
-open build/coverage/cpp/index.html      # C++ coverage
-open build/coverage/python/index.html   # Python coverage
+source .venv/bin/activate
+make dev-install
 ```
 
-Coverage is automatically tracked in CI and uploaded to [Codecov](https://codecov.io):
+### Testing & Coverage
 
-- Configuration: `codecov.yml`
-- CI integration: `.github/workflows/ci.yml`
-- Target: 80% project coverage, 70% patch coverage
+```bash
+# Run Python tests
+make test-python
+
+# Run C++ tests
+make test-cpp
+
+# Generate coverage reports (HTML)
+make coverage-all
+```
+
+### Code Quality
+
+```bash
+make check-all  # Runs linting, formatting, and type checking
+```
 
 ## Project Structure
 
-``` txt
+```txt
 quantum-statistics-solver/
 ├── src/                    # C++ source code
 ├── include/                # C++ headers
