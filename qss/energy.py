@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .distributions import distribution
+from .entropy import entropy as calculate_entropy, entropy_single_channel
 
 
 def energy(
@@ -39,6 +40,9 @@ def energy(
     """
     # Ensure E is numpy array
     E = np.asarray(E)
+    
+    if "entropy" not in df.columns:
+        df = calculate_entropy(df, E, g=g, muB_eV_per_T=muB_eV_per_T)
 
     # We'll create a list of energies to append as a new column
     energies = []
