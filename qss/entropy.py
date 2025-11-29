@@ -107,8 +107,7 @@ def entropy(
         if H_a == 0:
             # Spin degenerate case
             # distribution() returns total occupancy (0..2 for FD)
-            n_tot = distribution(E, mu, beta, distro_str)
-            n_single = n_tot / 2.0
+            n_single = distribution(E, mu, beta, 0.0, 0, distro_str)
 
             # Total entropy = 2 * single_channel_entropy
             s_k = 2.0 * entropy_single_channel(n_single, distro_str)
@@ -122,8 +121,8 @@ def entropy(
 
             # distribution() returns total occupancy form (0..2)
             # Physical single-spin occupancy is distribution()/2
-            n_up = distribution(E_up, mu, beta, distro_str) / 2.0
-            n_down = distribution(E_down, mu, beta, distro_str) / 2.0
+            n_up = distribution(E_up, mu, beta, 0.0, 1, distro_str)
+            n_down = distribution(E_down, mu, beta, 0.0, -1, distro_str)
 
             # Total entropy = S(n_up) + S(n_down)
             s_k = entropy_single_channel(n_up, distro_str) + entropy_single_channel(

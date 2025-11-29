@@ -23,13 +23,13 @@ TEST(DistributionTotal, DeltaZeroMatchesSingleChannel) {
     DistType dist = DistType::FD;
 
     // Oczekiwany: zwykły rozkład
-    auto f_expected = qss::distribution(E[0], mu, beta, dist);
+    auto f_expected = qss::distribution(E[0], mu, beta, 0.0, 0, dist);
     ASSERT_TRUE(f_expected);
 
     Mat total = distribution_total(E, mu, beta, dist, 0.0);
     // Sprawdź pierwszy wiersz i kilka punktów
     for (std::size_t i = 0; i < N; ++i)
-        EXPECT_NEAR(total[0][i], (*f_expected)[i], 1e-12);
+        EXPECT_NEAR(total[0][i], 2.0 * (*f_expected)[i], 1e-12);
 }
 
 TEST(DistributionTotal, SpinSplittingEqualsSumOfShiftedChannels) {
@@ -49,8 +49,8 @@ TEST(DistributionTotal, SpinSplittingEqualsSumOfShiftedChannels) {
             up[i] = E[j][i] - delta;
             dn[i] = E[j][i] + delta;
         }
-        auto f_up = qss::distribution(up, mu, beta, dist);
-        auto f_dn = qss::distribution(dn, mu, beta, dist);
+        auto f_up = qss::distribution(up, mu, beta, 0.0, 0, dist);
+        auto f_dn = qss::distribution(dn, mu, beta, 0.0, 0, dist);
         ASSERT_TRUE(f_up && f_dn);
         for (std::size_t i = 0; i < N; ++i) {
             double expected = (*f_up)[i] + (*f_dn)[i];

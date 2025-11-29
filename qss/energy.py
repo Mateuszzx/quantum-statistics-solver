@@ -71,7 +71,7 @@ def energy(
         if H_a == 0:
             # Spin degenerate case
             # distribution) returns total occupancy (factor of 2 included for FD)
-            n_vals = distribution(E, mu, beta, distro_str)
+            n_vals = distribution(E, mu, beta, 0.0, 0, distro_str) * 2.0
             avg_energy = np.mean(E * n_vals)
         else:
             # Zeeman split case
@@ -82,9 +82,8 @@ def energy(
 
             # distribution() returns 0..2 (for FD).
             # Physical occupancy per spin channel is distribution()/2.
-            n_up = distribution(E_up, mu, beta, distro_str) / 2.0
-            n_down = distribution(E_down, mu, beta, distro_str) / 2.0
-
+            n_up = distribution(E_up, mu, beta, 0.0, 1, distro_str)
+            n_down = distribution(E_down, mu, beta, 0.0, -1, distro_str)
             avg_energy = np.mean(E_up * n_up + E_down * n_down)
 
         energies.append(avg_energy)

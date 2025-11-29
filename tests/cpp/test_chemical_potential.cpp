@@ -73,7 +73,7 @@ TEST(ChemicalPotential, NonZeroField_TwoChannelsSum_muZeroFor_n2)
 	const double H = 7.5;    // Tesla
 	const double g = 2.0;    // electron g-factor
 	const double muB = QSS_MU_B_EV_PER_T;
-	const double n_assumed = 2.0; // sum of two spin channels equals 2 when mu=0
+	const double n_assumed = 1.0; // sum of two spin channels equals 2 when mu=0
 
 	CombinedSolverOptions opts;
 	const ChemicalPotentialResult mu = chemical_potential_B(DistType::FD,

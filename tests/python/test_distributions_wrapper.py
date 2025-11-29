@@ -25,23 +25,23 @@ class TestDistributionWrapper:
         e_k = np.linspace(-1, 1, 10)
         # We can't easily check the result values without knowing the C++ implementation details,
         # but we can check it runs and returns correct shape.
-        res = distribution(e_k, 0.0, 1.0, "FD")
+        res = distribution(e_k, 0.0, 1.0, 0.0, 0, "FD")
         assert res.shape == e_k.shape
         assert np.all(res >= 0)
         assert np.all(res <= 2) # FD max occupancy is 2 (spin degenerate)
 
     def test_distribution_2d(self):
         e_k = np.random.rand(5, 5)
-        res = distribution(e_k, 0.0, 1.0, DistType.FD)
+        res = distribution(e_k, 0.0, 1.0, 0.0, 0, DistType.FD)
         assert res.shape == e_k.shape
 
     def test_distribution_invalid_shape(self):
         e_k = np.zeros((2, 2, 2))
         with pytest.raises(ValueError, match="must be 1D or 2D"):
-            distribution(e_k, 0.0, 1.0, "FD")
+            distribution(e_k, 0.0, 1.0, 0.0, 0, "FD")
 
     def test_distribution_types(self):
         e_k = np.array([0.0])
-        for dt in ["FD", "FLB", "NFLB", "NFLB_i"]:
-            res = distribution(e_k, 0.0, 1.0, dt)
+        for dt in ["FD", "FLB", "SSL","NFL", "NFLB", "NFLB_i"]:
+            res = distribution(e_k, 0.0, 1.0, 0.0, 0, dt)
             assert res.shape == (1,)

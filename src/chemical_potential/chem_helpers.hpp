@@ -3,7 +3,11 @@
 #include "qss/distributions.hpp"
 #include "qss/types.hpp"
 
+
 namespace qss::chem {
+
+    constexpr double SPIN_UP_SHIFT = 1.0;
+    constexpr double SPIN_DN_SHIFT = -1.0;
 
 /**
  * @brief Computes the total occupation (sum over spins) for the given parameters.
@@ -34,36 +38,17 @@ inline Mat distribution_total(const Mat& E, double mu, double beta,
 
     // Output has the same shape as E
     Mat out(ny, Vec(nx));
-
     for (std::size_t j = 0; j < ny; ++j) {
-        // First calculate distribution for row E[j] without shift
-        // (useful when delta == 0)
-        auto f0 = qss::distribution(E[j], mu, beta, dist);
-        if (!f0)
+
+        auto spin_up = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_UP_SHIFT), dist);
+        auto spin_dn = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_DN_SHIFT), dist);
+        if (!spin_up || !spin_dn)
             throw std::runtime_error("distribution() failed");
 
-        if (delta == 0.0) {
-            // No splitting: copy f(E) results to output
-            out[j] = std::move(*f0);
-            continue; // next row
-        }
-
-        // Spin splitting: prepare two "energy rows"
-        // shifted by ±delta and calculate distributions for both channels.
-        Vec row_up(nx), row_dn(nx);
+        // No splitting: copy f(E) results to output
         for (std::size_t i = 0; i < nx; ++i) {
-            row_up[i] = E[j][i] - delta; // spin ↑
-            row_dn[i] = E[j][i] + delta; // spin ↓
+            out[j][i] = (*spin_up)[i] + (*spin_dn)[i];
         }
-
-        auto f_up = qss::distribution(row_up, mu, beta, dist);
-        auto f_dn = qss::distribution(row_dn, mu, beta, dist);
-        if (!f_up || !f_dn)
-            throw std::runtime_error("distribution() failed (split)");
-
-        // Sum of spin channels point-by-point
-        for (std::size_t i = 0; i < nx; ++i)
-            out[j][i] = (*f_up)[i] + (*f_dn)[i];
     }
 
     return out;

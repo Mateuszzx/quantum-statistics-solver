@@ -22,8 +22,8 @@ def plot_energy_distribution_along_k_const_n(e_k: np.ndarray, dim:int = 2, kx: O
     n_num = len(n)
     num_betas = len(betas)
     _ , ax = plt.subplots(nrows=num_betas, ncols=n_num, figsize=(figsize[0] * n_num, figsize[1] * num_betas))
-    distributions = ["FD", "FLB", "NFLB"]
-    col = ["blue", 'red', 'green']
+    distributions = ["FD", "FLB", "NFL", "NFLB", "SSL"]
+    col = ["blue", 'red',  'purple', 'green', 'black']
 
 
     ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -96,8 +96,8 @@ def plot_energy_distribution_diagonal_k_const_n(e_k: np.ndarray, dim:int = 2, kx
     beta_num = len(betas)
     #####################################################################
     _ , ax = plt.subplots(nrows=beta_num, ncols=n_num, figsize=(figsize[0]*n_num, figsize[1]*beta_num))
-    distributions = ["FD", "FLB", "NFLB"]
-    col = ["blue", 'red', 'green']
+    distributions = ["FD", "FLB", "NFL", "NFLB", "SSL"]
+    col = ["blue", 'red',  'purple', 'green', 'black']
 
     ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
@@ -162,7 +162,7 @@ def plot_energy_distribution(e_k: np.ndarray, dim:int = 2, kx: Optional[np.ndarr
     vmax = [2,2,1]
 
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=figsize)
-    distributions = ["FD", "FLB", "NFLB"]
+    distributions = ["FD", "FLB", "NFL", "NFLB", "SSL"]
     fig
     if dim == 2 and kx is not None and ky is not None:
 
@@ -215,7 +215,7 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     rows = int(np.ceil(len(betas)/cols))
 
     _, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red', 'green']
+    col = ["blue", 'red',  'purple', 'green', 'black']
 
     # Flatten axes for easy iteration
     ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -327,7 +327,8 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
     plt.clf()
     rows = int(np.ceil(len(n)/cols))
     _ , ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red', 'green']
+    col = ["blue", 'red',  'purple', 'green', 'black']
+
 
     # Flatten axes for easy iteration
     ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -430,7 +431,7 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     plt.clf()
     rows = int(np.ceil(len(n)/cols))
     _ , ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red', 'green']
+    col = ["blue", 'red',  'purple', 'green', 'black']
 
     # Flatten axes for easy iteration
     ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]

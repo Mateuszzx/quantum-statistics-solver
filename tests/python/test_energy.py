@@ -33,7 +33,7 @@ def sample_energy_matrix():
 def test_energy_calculation_ha_zero(sample_dataframe, sample_energy_matrix):
     # Test case where H_a = 0
     # Mock distribution to return all ones
-    with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)) as mock_dist:
+    with patch("qss.energy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)) as mock_dist:
         df_result = energy(sample_dataframe.iloc[[0]], sample_energy_matrix)
 
         assert "energy" in df_result.columns
@@ -49,7 +49,7 @@ def test_energy_calculation_ha_zero(sample_dataframe, sample_energy_matrix):
 def test_energy_calculation_ha_nonzero(sample_dataframe, sample_energy_matrix):
     # Test case where H_a != 0
     # Mock distribution to return all ones (so n_up = 0.5, n_down = 0.5)
-    with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)) as mock_dist:
+    with patch("qss.energy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)) as mock_dist:
         df_result = energy(sample_dataframe.iloc[[1]], sample_energy_matrix)
 
         # H_a = 1.0
@@ -63,7 +63,7 @@ def test_energy_calculation_ha_nonzero(sample_dataframe, sample_energy_matrix):
         assert df_result["energy"].iloc[0] == pytest.approx(expected_energy)
 
 def test_energy_calculates_entropy_if_missing(sample_dataframe_no_entropy, sample_energy_matrix):
-    with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)), \
+    with patch("qss.energy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)), \
          patch("qss.energy.calculate_entropy") as mock_entropy:
 
         # Mock entropy to return df with entropy column
@@ -92,7 +92,7 @@ def test_energy_flat_columns(sample_energy_matrix):
         "entropy": [0.5]
     })
 
-    with patch("qss.energy.distribution", return_value=np.ones_like(sample_energy_matrix)):
+    with patch("qss.energy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)):
         df_result = energy(df, sample_energy_matrix)
         assert "energy" in df_result.columns
         assert df_result["energy"].iloc[0] == pytest.approx(2.5)

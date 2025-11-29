@@ -56,7 +56,7 @@ def test_entropy_calculation_ha_zero(sample_dataframe, sample_energy_matrix):
     # Mock distribution to return 1.0 (n_tot = 1.0 => n_single = 0.5)
     # S_single(0.5) = ln 2
     # Total S = 2 * ln 2
-    with patch("qss.entropy.distribution", return_value=np.ones_like(sample_energy_matrix)):
+    with patch("qss.entropy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)):
         df_result = entropy(sample_dataframe.iloc[[0]], sample_energy_matrix)
         assert "entropy" in df_result.columns
         assert df_result["entropy"].iloc[0] == pytest.approx(2 * np.log(2))
@@ -66,7 +66,7 @@ def test_entropy_calculation_ha_nonzero(sample_dataframe, sample_energy_matrix):
     # Mock distribution to return 1.0 (n_tot = 1.0 => n_up = 0.5, n_down = 0.5)
     # S_up = ln 2, S_down = ln 2
     # Total S = 2 * ln 2
-    with patch("qss.entropy.distribution", return_value=np.ones_like(sample_energy_matrix)):
+    with patch("qss.entropy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)):
         df_result = entropy(sample_dataframe.iloc[[1]], sample_energy_matrix)
         assert "entropy" in df_result.columns
         assert df_result["entropy"].iloc[0] == pytest.approx(2 * np.log(2))
@@ -79,7 +79,7 @@ def test_entropy_flat_columns(sample_energy_matrix):
         "H_a": [0.0],
         "mu": [0.1]
     })
-    with patch("qss.entropy.distribution", return_value=np.ones_like(sample_energy_matrix)):
+    with patch("qss.entropy.distribution", return_value=0.5 * np.ones_like(sample_energy_matrix)):
         df_result = entropy(df, sample_energy_matrix)
         assert "entropy" in df_result.columns
         assert df_result["entropy"].iloc[0] == pytest.approx(2 * np.log(2))

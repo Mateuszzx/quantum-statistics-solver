@@ -39,25 +39,28 @@ void bind_distributions(nb::module_ &m)
         .value("FD", qss::DistType::FD)
         .value("FLB", qss::DistType::FLB)
         .value("NFLB", qss::DistType::NFLB)
-        .value("NFLB_i", qss::DistType::NFLB_i);
-
+        .value("NFLB_i", qss::DistType::NFLB_i)
+        .value("SSL", qss::DistType::SSL)
+        .value("NFL", qss::DistType::NFL);
     // Scalar variant: returns float | None
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, double e_k)
+        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, double e_k)
             -> std::optional<double> {
-            return qss::distribution(e_k, mu, beta, dist);
+            return qss::distribution(e_k, mu, beta, delta, spin_shift, dist);
         },
         "dist",
         "mu",
         "beta",
+        "delta",
+        "spin_shift",
         "e_k",
         "Scalar distribution value at energy e_k (float or None).");
 
     // Vector variant: returns 1-D numpy.ndarray[float64]
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, Vec1 E) -> Out1D {
+        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, Vec1 E) -> Out1D {
             const size_t n = (size_t)E.shape(0);
             if (n == 0)
                 return make_out_1d(0);
@@ -65,7 +68,7 @@ void bind_distributions(nb::module_ &m)
             qss::Vec Ev(n);
             std::memcpy(Ev.data(), E.data(), n * sizeof(double));
 
-            auto res = qss::distribution(Ev, mu, beta, dist);
+            auto res = qss::distribution(Ev, mu, beta, delta, spin_shift, dist);
             if (!res)
                 throw std::runtime_error("distribution: invalid DistType");
 
@@ -76,12 +79,14 @@ void bind_distributions(nb::module_ &m)
         "dist",
         "mu",
         "beta",
+        "delta",
+        "spin_shift",
         "E",
         "Vectorized distribution over a 1-D energy array E.");
 
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, Mat2In E) -> Mat2Out {
+        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, Mat2In E) -> Mat2Out {
             const size_t rows = E.shape(0);
             const size_t cols = E.shape(1);
 
@@ -95,7 +100,7 @@ void bind_distributions(nb::module_ &m)
             }
 
             // Call C++ implementation
-            auto res = qss::distribution(mat_in, mu, beta, dist);
+            auto res = qss::distribution(mat_in, mu, beta, delta, spin_shift, dist);
             if (!res)
                 throw std::runtime_error("distribution: invalid DistType");
 
@@ -112,6 +117,8 @@ void bind_distributions(nb::module_ &m)
         nb::arg("dist"),
         nb::arg("mu"),
         nb::arg("beta"),
+        nb::arg("delta"),
+        nb::arg("spin_shift"),
         nb::arg("E"),
         "Elementwise distribution over a 2-D float64 matrix E (C-contiguous).\n"
         "Returns an array with the same shape (rows, cols).");

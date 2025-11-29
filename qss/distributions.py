@@ -38,8 +38,10 @@ class DistType(Enum):
 
     FD = "FD"
     FLB = "FLB"
+    NFL = "NFL"
     NFLB = "NFLB"
     NFLB_i = "NFLB_i"
+    SSL = "SSL"
 
 
 def prepare_2D_lattice_data(
@@ -95,6 +97,8 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
         "FLB": _qss.DistType.FLB,
         "NFLB": _qss.DistType.NFLB,
         "NFLB_i": _qss.DistType.NFLB_i,
+        "SSL": _qss.DistType.SSL,
+        "NFL": _qss.DistType.NFL
     }
 
     if dist_type not in dist_map:
@@ -105,7 +109,13 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
     return dist_map[dist_type]
 
 
-def distribution(e_k: np.ndarray, mu: float, beta: float, dist_type: str | DistType) -> np.ndarray:
+def distribution(# noqa: PLR0913
+        e_k: np.ndarray,
+        mu: float,
+        beta: float,
+        delta: float,
+        spin_shift: int,
+        dist_type: str | DistType) -> np.ndarray:
     """
     Compute distribution values for given energies using specified distribution type.
 
@@ -117,6 +127,10 @@ def distribution(e_k: np.ndarray, mu: float, beta: float, dist_type: str | DistT
         Chemical potential
     beta : float
         Inverse temperature (1/kT)
+    delta : float
+        Zeeman shift
+    spin_shift : int
+        Spin shift (+1 or -1)
     dist_type : str or DistType
         Distribution type: 'FD', 'FLB', 'NFLB', 'NFLB_i' or DistType enum value
 
@@ -137,21 +151,21 @@ def distribution(e_k: np.ndarray, mu: float, beta: float, dist_type: str | DistT
     >>> import numpy as np
     >>> from qss.distributions import distribution, DistType
     >>> energies = np.linspace(-2, 2, 100)
-    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, dist_type='FD')
+    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, delta=0.0, spin_shift=1, dist_type='FD')
     >>> # or using enum
-    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, dist_type=DistType.FD)
+    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, delta=0.0, spin_shift=1, dist_type=DistType.FD)
     >>>
     >>> # 2D example
     >>> energies_2d = np.random.randn(10, 20)
-    >>> flb_dist = distribution(energies_2d, mu=0.5, beta=1.5, dist_type=DistType.FLB)
+    >>> flb_dist = distribution(energies_2d, mu=0.5, beta=1.5, delta=0.1, spin_shift=1, dist_type=DistType.FLB)
     """
     e_k = np.asarray(e_k, dtype=np.float64)
     cpp_dist_type = _get_cpp_dist_type(dist_type)
 
     if e_k.ndim == 1:
-        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k))
+        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k))
     if e_k.ndim == 2:
-        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, e_k))
+        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k))
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 
 

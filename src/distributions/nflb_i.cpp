@@ -1,6 +1,6 @@
 /**
  * @file nflb_i.cpp
- * @brief Implementation of the Implicit Non-Fermi-Liquid (NFLB_i) distribution.
+ * @brief Implementation of the Implicit Non-Fermi-Liquid  with Boltzmann(NFLB_i) distribution.
  */
 
 #include "qss/distributions.hpp"
@@ -119,21 +119,9 @@ inline double nflb_i_from_x(double x) noexcept
 }
 } // namespace
 
-double nflb_i_distribution(double e_k, double mu, double beta) noexcept
+double nflb_i_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept
 {
-    return nflb_i_from_x(beta * (e_k - mu));
-}
-
-void nflb_i_distribution_into(const double *ek,
-                              std::size_t size,
-                              double mu,
-                              double beta,
-                              double *out)
-{
-    for (std::size_t i = 0; i < size; ++i)
-    {
-        out[i] = nflb_i_from_x(beta * (ek[i] - mu));
-    }
+    return nflb_i_from_x(beta * (e_k + (spin_shift * delta) - mu));
 }
 
 } // namespace qss::detail
