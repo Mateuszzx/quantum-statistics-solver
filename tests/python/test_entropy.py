@@ -90,3 +90,25 @@ def test_entropy_malformed_dataframe(sample_energy_matrix):
 
     with pytest.raises(ValueError, match="Input DataFrame must have"):
         entropy(df, sample_energy_matrix)
+
+
+def test_entropy_ssl_calculation(sample_energy_matrix):
+    # Test SSL entropy calculation
+    # n_up = 0.25, n_down = 0.25 => n_hole = 0.5
+    # S = -0.25 ln 0.25 - 0.25 ln 0.25 - 0.5 ln 0.5
+
+    df = pd.DataFrame({
+        "distro": ["SSL"],
+        "n": [0.5],
+        "k_BT": [1.0],
+        "H_a": [0.0],
+        "mu": [0.1]
+    })
+
+    n_val = 0.25
+    expected_S = -2 * n_val * np.log(n_val) - (1 - 2*n_val) * np.log(1 - 2*n_val)
+
+    with patch("qss.entropy.distribution", return_value=n_val * np.ones_like(sample_energy_matrix)):
+        df_result = entropy(df, sample_energy_matrix)
+        assert df_result["entropy"].iloc[0] == pytest.approx(expected_S)
+

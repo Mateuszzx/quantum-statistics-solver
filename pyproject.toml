@@ -24,7 +24,7 @@ name = "qss"
 version = "0.1.0"
 description = "A library for quantum statistics calculations"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
     { name = "Mateusz Wójcik", email = "mateuszwojcikv@gmail.com" }
 ]
