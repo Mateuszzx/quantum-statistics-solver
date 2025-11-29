@@ -42,10 +42,6 @@ def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
         case "FLB":
             # FLB: S = S_fermion + n ln 2
             return -n * ln_n - (1 - n) * ln_1_n + n * np.log(2)  # type: ignore[no-any-return]
-        case "NFL":
-            # NFL: S = -n ln n + (1-n) ln(1-n)
-            ln_1_2n = safe_log(1 - 2 * n)
-            return -n * ln_n + n * np.log(2) + (1 - n) * ln_1_n - (1 - 2 * n) * ln_1_2n  # type: ignore[no-any-return]
         case "NFLB":
             # NFLB (valid for n_tot <= 1, i.e., n_single <= 0.5)
             # S_single(x) = -x ln x + x ln 2 + (1-x) ln(1-x) - (1-2x) ln(1-2x)
@@ -80,20 +76,43 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
     np.ndarray
         Total entropy values per k-state.
     """
-    if distro == "SSL":
-        # SSL: S = -n_up ln n_up - n_down ln n_down - (1 - n_up - n_down) ln(1 - n_up - n_down)
-        n_hole = 1.0 - n_up - n_down
-        # Ensure non-negative for log
-        n_hole = np.maximum(n_hole, 0.0)
+    match distro:
+        case "NFL":
+            # NFL: S = -n_up ln n_up - n_down ln n_down +
+            #       (1 - n_up - n_down) ln(1 - n_up - n_down) +
+            #       (1 - n_up) ln(1 - n_up)
+            #       (1 - n_down) ln(1 - n_down)s
 
-        ln_n_up = safe_log(n_up)
-        ln_n_down = safe_log(n_down)
-        ln_hole = safe_log(n_hole)
+            n_hole = 1.0 - n_up - n_down
+            # Ensure non-negative for log
+            n_hole = np.maximum(n_hole, 0.0)
+            ln_n_up = safe_log(n_up)
+            ln_n_down = safe_log(n_down)
+            ln_hole = safe_log(n_hole)
+            ln_1_n_up = safe_log(1 - n_up)
+            ln_1_n_down = safe_log(1 - n_down)
 
-        return -n_up * ln_n_up - n_down * ln_n_down - n_hole * ln_hole
+            return (
+                -n_up * ln_n_up
+                - n_down * ln_n_down
+                + n_hole * ln_hole
+                + (1 - n_up) * ln_1_n_up
+                + (1 - n_down) * ln_1_n_down
+            )
+        case "SSL":
+            # SSL: S = -n_up ln n_up - n_down ln n_down - (1 - n_up - n_down) ln(1 - n_up - n_down)
+            n_hole = 1.0 - n_up - n_down
+            # Ensure non-negative for log
+            n_hole = np.maximum(n_hole, 0.0)
 
-    # Default: sum of independent channel entropies
-    return entropy_single_channel(n_up, distro) + entropy_single_channel(n_down, distro)
+            ln_n_up = safe_log(n_up)
+            ln_n_down = safe_log(n_down)
+            ln_hole = safe_log(n_hole)
+
+            return -n_up * ln_n_up - n_down * ln_n_down - n_hole * ln_hole
+        case _:
+            # Default: sum of independent channel entropies
+            return entropy_single_channel(n_up, distro) + entropy_single_channel(n_down, distro)
 
 
 def entropy(
