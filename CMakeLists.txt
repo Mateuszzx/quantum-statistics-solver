@@ -125,7 +125,7 @@ if(ENABLE_PY_MODULE)
   endif()
 
   # Find Python with Module target (provides Python::Module)
-  find_package(Python 3.8 REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
+  find_package(Python 3.10 REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
 
   message(STATUS "Python interpreter: ${Python_EXECUTABLE}")
   message(STATUS "Python version:     ${Python_VERSION}")

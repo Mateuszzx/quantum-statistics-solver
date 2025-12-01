@@ -111,4 +111,3 @@ def test_entropy_ssl_calculation(sample_energy_matrix):
     with patch("qss.entropy.distribution", return_value=n_val * np.ones_like(sample_energy_matrix)):
         df_result = entropy(df, sample_energy_matrix)
         assert df_result["entropy"].iloc[0] == pytest.approx(expected_S)
-

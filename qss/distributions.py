@@ -98,7 +98,7 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
         "NFLB": _qss.DistType.NFLB,
         "NFLB_i": _qss.DistType.NFLB_i,
         "SSL": _qss.DistType.SSL,
-        "NFL": _qss.DistType.NFL
+        "NFL": _qss.DistType.NFL,
     }
 
     if dist_type not in dist_map:
@@ -109,13 +109,14 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
     return dist_map[dist_type]
 
 
-def distribution(# noqa: PLR0913
-        e_k: np.ndarray,
-        mu: float,
-        beta: float,
-        delta: float,
-        spin_shift: int,
-        dist_type: str | DistType) -> np.ndarray:
+def distribution(  # noqa: PLR0913
+    e_k: np.ndarray,
+    mu: float,
+    beta: float,
+    delta: float,
+    spin_shift: int,
+    dist_type: str | DistType,
+) -> np.ndarray:
     """
     Compute distribution values for given energies using specified distribution type.
 
@@ -163,9 +164,13 @@ def distribution(# noqa: PLR0913
     cpp_dist_type = _get_cpp_dist_type(dist_type)
 
     if e_k.ndim == 1:
-        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k))
+        return cast(
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k)
+        )
     if e_k.ndim == 2:
-        return cast(NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k))
+        return cast(
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k)
+        )
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 
 

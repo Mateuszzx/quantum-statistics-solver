@@ -92,7 +92,7 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
             ln_1_n_up = safe_log(1 - n_up)
             ln_1_n_down = safe_log(1 - n_down)
 
-            return (
+            return np.array(
                 -n_up * ln_n_up
                 - n_down * ln_n_down
                 + n_hole * ln_hole
@@ -109,10 +109,12 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
             ln_n_down = safe_log(n_down)
             ln_hole = safe_log(n_hole)
 
-            return -n_up * ln_n_up - n_down * ln_n_down - n_hole * ln_hole
+            return np.array(-n_up * ln_n_up - n_down * ln_n_down - n_hole * ln_hole)
         case _:
             # Default: sum of independent channel entropies
-            return entropy_single_channel(n_up, distro) + entropy_single_channel(n_down, distro)
+            return np.array(
+                entropy_single_channel(n_up, distro) + entropy_single_channel(n_down, distro)
+            )
 
 
 def entropy(

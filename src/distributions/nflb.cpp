@@ -49,4 +49,3 @@ double nflb_distribution(double e_k, double mu, double beta, double delta, int s
 }
 
 } // namespace qss::detail
-

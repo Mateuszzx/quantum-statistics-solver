@@ -19,7 +19,7 @@ High-performance library for quantum statistics calculations, focusing on strong
 ### Prerequisites
 - C++17 compatible compiler
 - CMake >= 3.15
-- Python >= 3.8
+- Python >= 3.10
 
 ### Install from Source
 
