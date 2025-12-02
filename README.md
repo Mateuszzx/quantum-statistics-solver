@@ -135,8 +135,8 @@ quantum-statistics-solver/
 
 GitHub Actions workflows (`.github/workflows/`):
 
-- **ubuntu.yml**: Main CI pipeline (Linux, macOS)
-- **windows.yml**: Windows builds (MSVC, MinGW)
+- **ci.yml**: Main CI pipeline (Linux)
+- **coverage.yml**: Code coverage checks
 - **pre-commit.yml**: Code quality checks
 - **documentation.yml**: Build and deploy docs
 
