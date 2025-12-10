@@ -64,6 +64,7 @@ class CoolingSchedule(Enum):
     Exponential = "Exponential"
     Linear = "Linear"
     Logarithmic = "Logarithmic"
+    Sawtooth = "Sawtooth"
 
     def to_qss(self) -> _qss.CoolingSchedule:
         """Convert to native `_qss.CoolingSchedule`."""
@@ -206,7 +207,7 @@ class SimulatedAnnealingOptions:
     T0: float = 1.0
     T_min: float = 1e-6
     alpha: float = 0.95
-    sched: CoolingSchedule = CoolingSchedule.Exponential
+    sched: CoolingSchedule = CoolingSchedule.Logarithmic
 
     max_iters: int = 5000
     min_iters: int = 50

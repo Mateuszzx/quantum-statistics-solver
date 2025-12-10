@@ -25,7 +25,8 @@ void bind_solver(nb::module_ &m)
     nb::enum_<qss::CoolingSchedule>(m, "CoolingSchedule")
         .value("Exponential", qss::CoolingSchedule::Exponential)
         .value("Linear", qss::CoolingSchedule::Linear)
-        .value("Logarithmic", qss::CoolingSchedule::Logarithmic);
+        .value("Logarithmic", qss::CoolingSchedule::Logarithmic)
+        .value("Sawtooth", qss::CoolingSchedule::Sawtooth);
 
     // Options
     nb::class_<qss::SolverOptions>(m, "SolverOptions")

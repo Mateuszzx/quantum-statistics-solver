@@ -8,6 +8,74 @@ import pandas as pd
 from qss import chemical_potential as cp
 from qss import distributions as dist
 
+DIST_COLORS = {
+    "FD": "blue",
+    "FLB": "red",
+    "NFL": "purple",
+    "NFLB": "green",
+    "SSL": "black",
+    "NFLB_i": "orange"
+}
+
+
+def _setup_axis(ax, text: Optional[str] = None, text_pos: Tuple[float, float] = (0.025, 0.985),
+                xlabel: Optional[str] = None, ylabel: Optional[str] = None, fontsize: int = 12,
+                ticks_len: int = 8, ticks_width: int = 3,
+                legend: bool = True, legend_position: str = "best",
+                xlims: Optional[Tuple[float, float]] = None,
+                ylims: Optional[Tuple[float, float]] = None,
+                show_log_vals: bool = False,
+                xscale: str = "linear", yscale: str = "linear",
+                spine_width: float = 1.5) -> None:
+    """Helper function to setup axis styling."""
+
+    if text:
+        ax.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax.transAxes,
+                fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
+
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=fontsize)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=fontsize)
+
+    if legend:
+        ax.legend(loc=legend_position, fontsize=fontsize)
+
+    ax.grid(True)
+    ax.tick_params(axis='both', which='major', direction="in", top=True, left=True,
+                   right=True, bottom=True, length=ticks_len,
+                   width=ticks_width, labelsize=fontsize)
+
+    if xscale != "linear":
+        ax.set_xscale(xscale)
+    if yscale != "linear":
+        ax.set_yscale(yscale)
+
+    for spine in ax.spines.values():
+        spine.set_linewidth(spine_width)
+
+    if xlims:
+        ax.set_xlim(xlims)
+    if ylims:
+        ax.set_ylim(ylims)
+
+    if show_log_vals:
+        ax2 = ax.twinx()
+        log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
+        ax2.tick_params(axis='y', which='major', direction="in", width=ticks_width,
+                        length=ticks_len, labelsize=fontsize)
+        ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 \\ln2$", "$3 \\ln2$"], fontsize=fontsize)
+
+        supp_colors = ['green', 'blue', 'red']
+        # Assuming ylims are set on main ax, we sync them or use default for entropy
+        # The original code hardcoded 3.2*ln(2)
+        limit = 3.2 * np.log(2)
+        ax.set_ylim(0, limit)
+        ax2.set_ylim(0, limit)
+
+        for i, log_v in enumerate(log_vals):
+            ax2.axhline(log_v, color=supp_colors[i], linestyle='--', linewidth=1.5, alpha=0.7)
+
 
 def plot_energy_distribution_along_k_const_n(e_k: np.ndarray, dim:int = 2, kx: Optional[np.ndarray] = None ,
                             ky: Optional[np.ndarray] = None , figsize: Tuple[int, int] = (15, 5),
@@ -23,7 +91,6 @@ def plot_energy_distribution_along_k_const_n(e_k: np.ndarray, dim:int = 2, kx: O
     num_betas = len(betas)
     _ , ax = plt.subplots(nrows=num_betas, ncols=n_num, figsize=(figsize[0] * n_num, figsize[1] * num_betas))
     distributions = ["FD", "FLB", "NFL", "NFLB", "SSL"]
-    col = ["blue", 'red',  'purple', 'green', 'black']
 
 
     ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -31,14 +98,15 @@ def plot_energy_distribution_along_k_const_n(e_k: np.ndarray, dim:int = 2, kx: O
     if dim == 2 and kx is not None:
         for beta_i, beta in enumerate(betas):
            for j,n_i in enumerate(n):
-                for i, distro in enumerate(distributions):
+                for distro in distributions:
                     # mu = cp.chemical_potential_computation(distro=distro, beta=beta, n=n_i, dim=dim, e_k=e_k, kx=kx, ky=ky)
                     df_mu = cp.chemical_potential(distros=[distro], n_vals=[n_i], beta_vals=[beta], H_a_vals=[0.0], E=e_k)
                     mu = df_mu["mu"].iloc[0]
                     n_k = dist.distribution(e_k, mu=mu, beta=beta, dist_type=distro)
                     linewidth = 2 if distro == "FD" else 1
+                    color = DIST_COLORS.get(distro, "black")
 
-                    ax[beta_i * n_num + j].plot(kx[N//2:], n_k[N//2,N//2:], color=col[i], marker="o", linewidth=linewidth, markersize=2, label=distro)
+                    ax[beta_i * n_num + j].plot(kx[N//2:], n_k[N//2,N//2:], color=color, marker="o", linewidth=linewidth, markersize=2, label=distro)
 
                 # Set text
                 text =f"""$t = -1$
@@ -47,33 +115,11 @@ $N = 100 \\times 100$
 $n = {n_i:.3f}$
 $k_B T/|t| = {1/beta:.2f}$"""
 
-                plt.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax[beta_i*n_num + j].transAxes,
-                            fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
-
-                # Axis labels
-                ax[beta_i * n_num + j].set_xlabel(r"$\Gamma - X$", fontsize=fontsize)
-                ax[beta_i * n_num + j].set_ylabel("occupation number", fontsize=fontsize)
-                # ax[beta_i * n_num + j].set_title(f"{distro}", fontsize=fontsize)
-
-                # Legend
-                if legend:
-                    ax[beta_i * n_num + j].legend(loc=legend_position, fontsize=fontsize)
-
-                # Grid & Ticks
-                ax[beta_i * n_num + j].grid(True)
-                ax[beta_i * n_num + j].tick_params(axis='both', which='major', direction ="in", top = True, left = True,
-                                right = True, bottom = True, length =ticks_len,
-                                width =ticks_width, labelsize=fontsize)
+                _setup_axis(ax[beta_i * n_num + j], text, text_pos, r"$\Gamma - X$", "occupation number",
+                            fontsize, ticks_len, ticks_width, legend, legend_position, ylims=ylims)
 
                 # Set proper tick labels for k_x
                 ax[beta_i * n_num + j].set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
-
-                # Spines
-                for spine in ax[beta_i * n_num + j].spines.values():
-                    spine.set_linewidth(1.5)
-
-                if ylims:
-                    ax[beta_i * n_num + j].set_ylim(ylims)
 
 
         # plt.tight_layout()  # Adjust layout to make room for the suptitle
@@ -97,21 +143,21 @@ def plot_energy_distribution_diagonal_k_const_n(e_k: np.ndarray, dim:int = 2, kx
     #####################################################################
     _ , ax = plt.subplots(nrows=beta_num, ncols=n_num, figsize=(figsize[0]*n_num, figsize[1]*beta_num))
     distributions = ["FD", "FLB", "NFL", "NFLB", "SSL"]
-    col = ["blue", 'red',  'purple', 'green', 'black']
 
     ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
     if dim == 2 and kx is not None:
         for beta_i, beta in enumerate(betas):
            for j,n_i in enumerate(n):
-                for i, distro in enumerate(distributions):
+                for distro in distributions:
                     # mu = cp.chemical_potential_computation(distro=distro, beta=beta, n=n_i, dim=dim, e_k=e_k, kx=kx, ky=ky)
                     df_mu = cp.chemical_potential(distros=[distro], n_vals=[n_i], beta_vals=[beta], H_a_vals=[0.0], E=e_k)
                     mu = df_mu["mu"].iloc[0]
                     n_k = dist.distribution(e_k, mu=mu, beta=beta, dist_type=distro)
                     linewidth = 2 if distro == "FD" else 1
+                    color = DIST_COLORS.get(distro, "black")
 
-                    ax[beta_i*n_num + j].plot(kx[N//2:], np.diag(n_k)[N//2:], color=col[i], marker="o", linewidth=linewidth, markersize=2, label=distro)
+                    ax[beta_i*n_num + j].plot(kx[N//2:], np.diag(n_k)[N//2:], color=color, marker="o", linewidth=linewidth, markersize=2, label=distro)
 
                 # Set text
                 text =f"""$t = -1$
@@ -120,33 +166,11 @@ $N = 100 \\times 100$
 $n = {n_i:.3f}$
 $k_B T/|t| = {1/beta:.2f}$"""
 
-                plt.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax[beta_i*n_num + j].transAxes,
-                            fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
-
-                # Axis labels
-                ax[beta_i*n_num + j].set_xlabel(r"$\Gamma - M$", fontsize=fontsize)
-                ax[beta_i*n_num + j].set_ylabel("occupation number", fontsize=fontsize)
-                # ax[beta_i*n_num + j].set_title(f"{distro}", fontsize=fontsize)
-
-                # Legend
-                if legend:
-                    ax[beta_i*n_num + j].legend(loc=legend_position, fontsize=fontsize)
-
-                # Grid & Ticks
-                ax[beta_i*n_num + j].grid(True)
-                ax[beta_i*n_num + j].tick_params(axis='both', which='major', direction ="in", top = True, left = True,
-                                right = True, bottom = True, length =ticks_len,
-                                width =ticks_width, labelsize=fontsize)
+                _setup_axis(ax[beta_i * n_num + j], text, text_pos, r"$\Gamma - M$", "occupation number",
+                            fontsize, ticks_len, ticks_width, legend, legend_position, ylims=ylims)
 
                 # Set proper tick labels for k_x
                 ax[beta_i*n_num + j].set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
-
-                # Spines
-                for spine in ax[beta_i*n_num + j].spines.values():
-                    spine.set_linewidth(1.5)
-
-                if ylims:
-                    ax[beta_i*n_num + j].set_ylim(ylims)
 
 
         # plt.tight_layout()  # Adjust layout to make room for the suptitle
@@ -215,7 +239,6 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     rows = int(np.ceil(len(betas)/cols))
 
     _, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red',  'purple', 'green', 'black']
 
     # Flatten axes for easy iteration
     ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -223,7 +246,7 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     for j,beta in enumerate(betas):
         k_BT = 1/beta
         # Plotting each distribution
-        for i, distro in enumerate(distros):
+        for distro in distros:
             d_label = distro.name if hasattr(distro, "name") else str(distro)
             try:
                 # Select data for specific distro, k_BT, H_a
@@ -238,12 +261,13 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 continue
 
             y_val = y_val.reshape(-1)
+            color = DIST_COLORS.get(d_label, "black")
             if blue_line and d_label == "FD":
                 # Plotting the blue line for FD distribution
-                ax_flat[j].plot(n, y_val, label=d_label, color=col[i], marker="o", markersize=4, linewidth=3)
+                ax_flat[j].plot(n, y_val, label=d_label, color=color, marker="o", markersize=4, linewidth=3)
             else:
                 # Plotting the other distributions
-                ax_flat[j].plot(n, y_val, label=d_label, color=col[i],  marker="o", markersize=3)
+                ax_flat[j].plot(n, y_val, label=d_label, color=color,  marker="o", markersize=3)
 
         if j in ssl_theory:
             # Plotting the SSL theory line
@@ -257,51 +281,10 @@ $t' / |t| = {t_prim}$
 $N = 100 \\times 100$
 $k_B T/|t| = {1/beta:.3f}$"""
 
-        plt.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax_flat[j].transAxes,
-                    fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
-
-        # Axis labels
-        ax_flat[j].set_xlabel("band filling, n", fontsize=fontsize)
-        ax_flat[j].set_ylabel(y_label, fontsize=fontsize)
-
-        # Legend
-        if legend:
-            if not only_one_legend:
-                # ax_flat[j].legend()
-                ax_flat[j].legend(loc=legend_position, fontsize=fontsize)
-            else:
-                ax_flat[0].legend(loc=legend_position, fontsize=fontsize)
-
-        # Grid & Ticks
-        ax_flat[j].grid(True)
-        ax_flat[j].tick_params(axis='both', which='major', direction ="in", top = True, left = True,
-                            right = True, bottom = True, length =ticks_len,
-                            width =ticks_width,labelsize=fontsize)
-        # Show log values
-        if show_log_vals:
-            ax2 = ax_flat[j].twinx()
-            log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
-            ax2.tick_params(axis='y', which='major', direction ="in", width= ticks_width,
-                            length = ticks_len, labelsize=fontsize)
-
-            ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 ln2$", "$3 ln2$"], fontsize=fontsize)
-
-            supp_colors = ['green', 'blue', 'red']
-            ax_flat[j].set_ylim(0, 3.2*np.log(2))
-            ax2.set_ylim(0, 3.2*np.log(2))
-            for i,log in enumerate(log_vals):
-
-                ax2.axhline(log, color=supp_colors[i], linestyle='--', linewidth=1.5, alpha=0.7)
-        # Spines
-        for spine in ax_flat[j].spines.values():
-            spine.set_linewidth(1.5)
-
-        # Xlims and Ylims
-        if xlims is not None:
-            ax_flat[j].set_xlim(xlims)
-
-        if ylims is not None:
-            ax_flat[j].set_ylim(ylims)
+        legend_arg = legend and (not only_one_legend or j == 0)
+        _setup_axis(ax_flat[j], text, text_pos, "band filling, n", y_label,
+                    fontsize, ticks_len, ticks_width, legend_arg, legend_position,
+                    xlims, ylims, show_log_vals)
 
 def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 betas: Union[List[float], np.ndarray], y_label: str,
@@ -327,7 +310,6 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
     plt.clf()
     rows = int(np.ceil(len(n)/cols))
     _ , ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red',  'purple', 'green', 'black']
 
 
     # Flatten axes for easy iteration
@@ -336,7 +318,7 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
     for j, n_i in enumerate(n):
 
         # Plotting each distribution
-        for i, distro in enumerate(distros):
+        for distro in distros:
             d_label = distro.name if hasattr(distro, "name") else str(distro)
 
             try:
@@ -348,12 +330,13 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
                 print(f"Warning: Data not found for {d_label}, n={n_i}, H_a={H_a}")
                 continue
 
+            color = DIST_COLORS.get(d_label, "black")
             if blue_line and d_label == "FD":
                 # Plotting the blue line for FD distribution
-                ax_flat[j].semilogx(x_plot, y_plot , label=d_label, color=col[i], marker="o", markersize=4, linewidth=3)
+                ax_flat[j].semilogx(x_plot, y_plot , label=d_label, color=color, marker="o", markersize=4, linewidth=3)
             else:
                 # Plotting the other distributions
-                ax_flat[j].semilogx(x_plot, y_plot , label=d_label, color=col[i], marker="o", markersize=3)
+                ax_flat[j].semilogx(x_plot, y_plot , label=d_label, color=color, marker="o", markersize=3)
 
 
         # Set text
@@ -362,51 +345,10 @@ $t' / |t| = {t_prim}$
 $N = 100 \\times 100$
 $ n = {n_i}$"""
 
-        plt.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax_flat[j].transAxes,
-                fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
-
-        # Axis labels
-        ax_flat[j].set_ylabel(y_label, fontsize=fontsize)
-        ax_flat[j].set_xlabel("temperature $k_B  T / |t|$", fontsize=fontsize)
-
-        # Legend
-        if legend:
-            if not only_one_legend:
-                ax_flat[j].legend(loc=legend_position, fontsize=fontsize)
-            else:
-                ax_flat[0].legend(loc=legend_position, fontsize=fontsize)
-
-        # Grid & Ticks
-        ax_flat[j].grid(True)
-        ax_flat[j].tick_params(axis='both', which='major', direction ="in",  top = True, left = True,
-                            right = True, bottom = True, width =ticks_width,
-                            length = ticks_len, labelsize=fontsize)
-
-        # Show log values
-        if show_log_vals:
-            ax2 = ax_flat[j].twinx()
-            log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
-            ax2.tick_params(axis='y', which='major', direction ="in", width =ticks_width,
-                            length = ticks_len, labelsize=fontsize)
-            ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 ln2$", "$3 ln2$"], fontsize=fontsize)
-
-            supp_colors = ['green', 'blue', 'red']
-            ax_flat[j].set_ylim(0, 3.2*np.log(2))
-            ax2.set_ylim(0, 3.2*np.log(2))
-            for i,log in enumerate(log_vals):
-
-                ax2.axhline(log, color=supp_colors[i], linestyle='--', linewidth=1.5, alpha=0.7)
-
-        # Spines
-        for spine in ax_flat[j].spines.values():
-            spine.set_linewidth(1.5)
-
-        # Xlims and Ylims
-        if xlims is not None:
-            ax_flat[j].set_xlim(xlims)
-
-        if ylims is not None:
-            ax_flat[j].set_ylim(ylims)
+        legend_arg = legend and (not only_one_legend or j == 0)
+        _setup_axis(ax_flat[j], text, text_pos, "temperature $k_B  T / |t|$", y_label,
+                    fontsize, ticks_len, ticks_width, legend_arg, legend_position,
+                    xlims, ylims, show_log_vals, xscale="log")
 
 def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 beta: float, y_label: str,
@@ -431,7 +373,6 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     plt.clf()
     rows = int(np.ceil(len(n)/cols))
     _ , ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
-    col = ["blue", 'red',  'purple', 'green', 'black']
 
     # Flatten axes for easy iteration
     ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
@@ -441,7 +382,7 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
     for j, n_i in enumerate(n):
 
         # Plotting each distribution
-        for i, distro in enumerate(distros):
+        for distro in distros:
             d_label = distro.name if hasattr(distro, "name") else str(distro)
 
             try:
@@ -456,12 +397,13 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 print(f"Warning: Data not found for {d_label}, n={n_i}, k_BT={k_BT}")
                 continue
 
+            color = DIST_COLORS.get(d_label, "black")
             if blue_line and d_label == "FD":
                 # Plotting the blue line for FD distribution
-                ax_flat[j].plot(x_plot, y_plot , label=d_label, color=col[i], marker="o", markersize=4, linewidth=3)
+                ax_flat[j].plot(x_plot, y_plot , label=d_label, color=color, marker="o", markersize=4, linewidth=3)
             else:
                 # Plotting the other distributions
-                ax_flat[j].plot(x_plot, y_plot , label=d_label, color=col[i], marker="o", markersize=3)
+                ax_flat[j].plot(x_plot, y_plot , label=d_label, color=color, marker="o", markersize=3)
 
 
         # Set text
@@ -471,52 +413,10 @@ $N = 100 \\times 100$
 $ n = {n_i}$
 $k_B T/|t| = {k_BT:.3f}$"""
 
-        plt.text(text_pos[0], text_pos[1], text, ha='left', va='top', transform=ax_flat[j].transAxes,
-                fontdict={'fontsize': fontsize, 'color': 'black', 'fontweight': 'bold'})
-
-        # Axis labels
-        ax_flat[j].set_ylabel(y_label, fontsize=fontsize)
-        ax_flat[j].set_xlabel("magnetic field $H_a$", fontsize=fontsize)
-        ax_flat[j].set_xscale("log")
-
-        # Legend
-        if legend:
-            if not only_one_legend:
-                ax_flat[j].legend(loc=legend_position, fontsize=fontsize)
-            else:
-                ax_flat[0].legend(loc=legend_position, fontsize=fontsize)
-
-        # Grid & Ticks
-        ax_flat[j].grid(True)
-        ax_flat[j].tick_params(axis='both', which='major', direction ="in",  top = True, left = True,
-                            right = True, bottom = True, width =ticks_width,
-                            length = ticks_len, labelsize=fontsize)
-
-        # Show log values
-        if show_log_vals:
-            ax2 = ax_flat[j].twinx()
-            log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
-            ax2.tick_params(axis='y', which='major', direction ="in", width =ticks_width,
-                            length = ticks_len, labelsize=fontsize)
-            ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 ln2$", "$3 ln2$"], fontsize=fontsize)
-
-            supp_colors = ['green', 'blue', 'red']
-            ax_flat[j].set_ylim(0, 3.2*np.log(2))
-            ax2.set_ylim(0, 3.2*np.log(2))
-            for i,log in enumerate(log_vals):
-
-                ax2.axhline(log, color=supp_colors[i], linestyle='--', linewidth=1.5, alpha=0.7)
-
-        # Spines
-        for spine in ax_flat[j].spines.values():
-            spine.set_linewidth(1.7)
-
-        # Xlims and Ylims
-        if xlims is not None:
-            ax_flat[j].set_xlim(xlims)
-
-        if ylims is not None:
-            ax_flat[j].set_ylim(ylims)
+        legend_arg = legend and (not only_one_legend or j == 0)
+        _setup_axis(ax_flat[j], text, text_pos, "magnetic field $H_a$", y_label,
+                    fontsize, ticks_len, ticks_width, legend_arg, legend_position,
+                    xlims, ylims, show_log_vals, xscale="log", spine_width=1.7)
 
 def plot_3d_results(
     results: pd.DataFrame,

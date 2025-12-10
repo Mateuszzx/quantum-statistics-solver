@@ -79,7 +79,7 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
     match distro:
         case "NFL":
             # NFL: S = -n_up ln n_up - n_down ln n_down +
-            #       (1 - n_up - n_down) ln(1 - n_up - n_down) +
+            #       2* (1 - n_up - n_down) ln(1 - n_up - n_down) +
             #       (1 - n_up) ln(1 - n_up)
             #       (1 - n_down) ln(1 - n_down)s
 
@@ -95,7 +95,7 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
             return np.array(
                 -n_up * ln_n_up
                 - n_down * ln_n_down
-                + n_hole * ln_hole
+                - 2 * n_hole * ln_hole
                 + (1 - n_up) * ln_1_n_up
                 + (1 - n_down) * ln_1_n_down
             )

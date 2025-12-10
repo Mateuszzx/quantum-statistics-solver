@@ -12,7 +12,8 @@ enum class CoolingSchedule
 {
     Exponential, ///< T = T0 * alpha^k
     Linear,      ///< T = T0 * (1 - k/max_iters)
-    Logarithmic  ///< T = T0 / log(2 + k)
+    Logarithmic, ///< T = T0 / log(2 + k)
+    Sawtooth     ///< Periodic linear decay
 };
 
 // Derive from SolverOptions (fix syntax)
