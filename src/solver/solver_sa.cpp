@@ -1,6 +1,8 @@
 #include "qss/solver_sa.hpp"
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <iomanip>
 #include <random>
 #include <stdexcept>
 
@@ -10,7 +12,7 @@ namespace qss
 /**
  * @brief Reflects a value x back into the interval [lo, hi].
  *
- * This function implements a "billiard ball" reflection logic. If x is outside [lo, hi],
+ * This function implements a reflection logic. If x is outside [lo, hi],
  * it is reflected back into the domain. This preserves the detailed balance condition better
  * than simple clamping (which accumulates probability mass at the boundaries).
  *
@@ -134,8 +136,26 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
     const double base_sigma = std::max(1e-16, o.step_sigma);
     double sigma = base_sigma;
 
+    // Setup logging if requested
+    std::ofstream log_stream;
+    if (!o.log_file.empty())
+    {
+        log_stream.open(o.log_file);
+        if (log_stream.is_open())
+        {
+            log_stream << "iteration,temperature,energy";
+            for (size_t i = 0; i < x0.size(); ++i)
+            {
+                log_stream << ",x" << i;
+            }
+            log_stream << "\n";
+        }
+    }
+
     // Main Optimization Loop
-    for (std::size_t k = 0; k < o.max_iters; ++k)
+    // Cast max_iters to size_t to avoid signed/unsigned comparison warnings
+    const std::size_t max_iters = static_cast<std::size_t>(o.max_iters);
+    for (std::size_t k = 0; k < max_iters; ++k)
     {
         R.iterations = k + 1;
 
@@ -145,18 +165,29 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
         // Low T -> Low probability (exploitation).
         T = next_T(o, k);
 
+        // Log current state
+        if (log_stream.is_open())
+        {
+            log_stream << (k + 1) << "," << T << "," << f_cur;
+            for (double val : x_cur)
+            {
+                log_stream << "," << val;
+            }
+            log_stream << "\n";
+        }
+
         // --- Step 2: Update Step Size (Sigma) ---
         // The step size determines how far we look for a neighbor.
         // It decays over time to allow fine-tuning of the solution in later stages.
-        // Formula: base * scale(T) * (step_decay^k)
         sigma = base_sigma;
         if (o.scale_sigma_by_T && o.T0 > 0.0)
         {
             sigma *= std::sqrt(std::max(0.0, T / o.T0));
         }
+
         const double decay_k = std::pow(std::max(0.0, o.step_decay), static_cast<double>(k));
         sigma *= decay_k;
-        sigma = std::max(1e-16, sigma);
+        sigma = std::max(1e-8, sigma);
 
         if (k + 1 >= o.min_iters)
         {
@@ -203,7 +234,7 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
         // - If dE > 0 (worse), we accept with probability exp(-dE / T).
         double dE = f_cand - f_cur;
         bool accept =
-            (dE <= 0.0) || (uni(rng) < std::exp(-dE / std::max(T, 1e-16)));
+            (dE <= 0.0) || (uni(rng) < std::exp(-dE / std::max(T, 1e-8)));
 
         if (accept)
         {
@@ -212,10 +243,20 @@ MinResult sa_minimize_impl(const ObjectiveND &g,
             ++R.accepts;
             if (f_cur < f_best)
             {
+                // Check for significant improvement using SolverOptions tolerances.
+                // If the improvement is smaller than tolerance, we don't reset the stall counter.
+                // This prevents the solver from running forever on tiny improvements (e.g. numerical noise).
+                double improvement = f_best - f_cur;
+                double tol = o.abs_tol + o.rel_tol * std::abs(f_best);
+
                 f_best = f_cur;
                 R.x_best = x_cur;
                 R.f_best = f_best;
-                no_improve = 0;
+
+                if (improvement > tol)
+                    no_improve = 0;
+                else
+                    ++no_improve;
             }
             else
             {

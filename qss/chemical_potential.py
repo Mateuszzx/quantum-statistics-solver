@@ -33,7 +33,7 @@ def _dist_label(d: _qss.DistType | PyDistType | str) -> str:
     return str(d).upper()
 
 
-def chemical_potential(  # noqa: PLR0913
+def chemical_potential(  # noqa: PLR0913, PLR0912
     distros: Sequence[PyDistType | _qss.DistType | str],
     n_vals: Sequence[float],
     beta_vals: Sequence[float],
@@ -94,8 +94,23 @@ def chemical_potential(  # noqa: PLR0913
         solver_opts_native = _qss.CombinedSolverOptions()
     elif isinstance(solver_opts, _qss.CombinedSolverOptions):
         solver_opts_native = solver_opts
+    elif isinstance(solver_opts, _qss.SimulatedAnnealingOptions):
+        solver_opts_native = _qss.CombinedSolverOptions()
+        solver_opts_native.solver = _qss.SolverType.SimulatedAnnealing
+        solver_opts_native.sa = solver_opts
     else:
-        solver_opts_native = solver_opts.to_qss()
+        # Try to convert from Python object
+        native = solver_opts.to_qss()
+        if isinstance(native, _qss.SimulatedAnnealingOptions):
+            solver_opts_native = _qss.CombinedSolverOptions()
+            solver_opts_native.solver = _qss.SolverType.SimulatedAnnealing
+            solver_opts_native.sa = native
+        elif isinstance(native, _qss.CombinedSolverOptions):
+            solver_opts_native = native
+        else:
+            # Assume RootSolverOptions
+            solver_opts_native = _qss.CombinedSolverOptions()
+            solver_opts_native.root = native
 
     records = []
     index_keys = []

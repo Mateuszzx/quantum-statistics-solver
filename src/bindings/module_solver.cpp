@@ -3,6 +3,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
 
 namespace nb = nanobind;
 
@@ -43,11 +44,13 @@ void bind_solver(nb::module_ &m)
 
     nb::class_<qss::SimulatedAnnealingOptions>(m, "SimulatedAnnealingOptions")
         .def(nb::init<>())
+        .def_rw("abs_tol", &qss::SimulatedAnnealingOptions::abs_tol)
+        .def_rw("rel_tol", &qss::SimulatedAnnealingOptions::rel_tol)
+        .def_rw("max_iters", &qss::SimulatedAnnealingOptions::max_iters)
         .def_rw("T0", &qss::SimulatedAnnealingOptions::T0)
         .def_rw("T_min", &qss::SimulatedAnnealingOptions::T_min)
         .def_rw("alpha", &qss::SimulatedAnnealingOptions::alpha)
         .def_rw("sched", &qss::SimulatedAnnealingOptions::sched)
-        .def_rw("max_iters", &qss::SimulatedAnnealingOptions::max_iters)
         .def_rw("min_iters", &qss::SimulatedAnnealingOptions::min_iters)
         .def_rw("stall_iters", &qss::SimulatedAnnealingOptions::stall_iters)
         .def_rw("step_sigma", &qss::SimulatedAnnealingOptions::step_sigma)
@@ -55,7 +58,8 @@ void bind_solver(nb::module_ &m)
         .def_rw("scale_sigma_by_T", &qss::SimulatedAnnealingOptions::scale_sigma_by_T)
         .def_rw("bounds", &qss::SimulatedAnnealingOptions::bounds)
         .def_rw("reflect_bounds", &qss::SimulatedAnnealingOptions::reflect_bounds)
-        .def_rw("seed", &qss::SimulatedAnnealingOptions::seed);
+        .def_rw("seed", &qss::SimulatedAnnealingOptions::seed)
+        .def_rw("log_file", &qss::SimulatedAnnealingOptions::log_file);
 
     nb::class_<qss::CombinedSolverOptions>(m, "CombinedSolverOptions")
         .def(nb::init<>())

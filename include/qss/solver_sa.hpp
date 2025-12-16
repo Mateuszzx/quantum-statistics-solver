@@ -1,5 +1,6 @@
 #pragma once
 #include "qss/solver_types.hpp"
+#include <string>
 
 namespace qss
 {
@@ -20,8 +21,14 @@ enum class CoolingSchedule
 /**
  * @brief Configuration options for Simulated Annealing optimization.
  */
-struct SimulatedAnnealingOptions
+struct SimulatedAnnealingOptions : public SolverOptions
 {
+    SimulatedAnnealingOptions()
+    {
+        // Set default iterations for SA (higher than generic root-finding default)
+        max_iters = 50'000;
+    }
+
     double T0 = 1.0;        ///< Initial temperature.
     double T_min = 1e-6;    ///< Minimum temperature to stop.
     double alpha = 0.95;    ///< Decay factor for Exponential schedule.
@@ -40,6 +47,8 @@ struct SimulatedAnnealingOptions
     bool reflect_bounds = true; ///< If true, reflect off bounds; otherwise clamp.
 
     unsigned long long seed = 0xC0FFEEULL; ///< Random seed.
+
+    std::string log_file = ""; ///< Path to log file. If empty, logging is disabled.
 };
 
 // Declare SA entry point used by OptimizationSolver

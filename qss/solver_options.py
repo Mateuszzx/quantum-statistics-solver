@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+import numpy as np
+
 try:
     from . import _qss  # type: ignore[attr-defined]
 except ImportError as e:
@@ -202,6 +204,10 @@ class SimulatedAnnealingOptions:
         If True, reflect proposals at bounds (else clamp).
     seed : int | None
         RNG seed; None lets backend pick a default.
+    abs_tol : float
+        Absolute tolerance for convergence check.
+    rel_tol : float
+        Relative tolerance for convergence check.
     """
 
     T0: float = 1.0
@@ -220,6 +226,10 @@ class SimulatedAnnealingOptions:
     bounds: list[tuple[float, float]] = field(default_factory=lambda: [(-10.0, 10.0)])
     reflect_bounds: bool = True
     seed: int | None = None
+
+    abs_tol: float = 1e-12
+    rel_tol: float = 1e-9
+    log_file: str | None = None
 
     def __post_init__(self) -> None:
         """Validate parameters after initialization."""
@@ -252,6 +262,8 @@ class SimulatedAnnealingOptions:
         if _qss is None:
             raise RuntimeError("C++ extension not available")
         o = _qss.SimulatedAnnealingOptions()
+        o.abs_tol = float(self.abs_tol)
+        o.rel_tol = float(self.rel_tol)
         o.T0 = float(self.T0)
         o.T_min = float(self.T_min)
         o.alpha = float(self.alpha)
@@ -266,6 +278,10 @@ class SimulatedAnnealingOptions:
         o.reflect_bounds = bool(self.reflect_bounds)
         if self.seed is not None:
             o.seed = int(self.seed)
+        if self.log_file:
+            o.log_file = self.log_file
+        else:
+            o.log_file = f"sa_+ {np.random.randint(1_000_000)}.csv"
         return o
 
     @classmethod
@@ -275,7 +291,14 @@ class SimulatedAnnealingOptions:
         raw_seed = getattr(o, "seed", None)
         if isinstance(raw_seed, int) and raw_seed not in (0, -1):
             seed_opt = raw_seed
+
+        log_file_opt: str | None = None
+        if hasattr(o, "log_file") and o.log_file:
+            log_file_opt = o.log_file
+
         return cls(
+            abs_tol=o.abs_tol,
+            rel_tol=o.rel_tol,
             T0=o.T0,
             T_min=o.T_min,
             alpha=o.alpha,
@@ -289,6 +312,7 @@ class SimulatedAnnealingOptions:
             bounds=list(o.bounds),
             reflect_bounds=o.reflect_bounds,
             seed=seed_opt,
+            log_file=log_file_opt,
         )
 
 
@@ -387,6 +411,9 @@ def sa_defaults(  # noqa: PLR0913
     bounds: list[tuple[float, float]] | None = None,
     reflect_bounds: bool = True,
     seed: int | None = None,
+    abs_tol: float = 1e-12,
+    rel_tol: float = 1e-9,
+    log_file: str | None = None,
 ) -> CombinedSolverOptions:
     """Ready-to-use Simulated Annealing configuration with sensible defaults.
 
@@ -409,6 +436,10 @@ def sa_defaults(  # noqa: PLR0913
         Reflect at bounds if True; clamp if False.
     seed : int | None
         RNG seed; None lets backend pick a default.
+    abs_tol, rel_tol : float
+        Tolerances for convergence check.
+    log_file : str | None
+        Path to log file for debug data.
 
     Returns
     -------
@@ -431,6 +462,9 @@ def sa_defaults(  # noqa: PLR0913
             bounds=[(-10.0, 10.0)] if bounds is None else bounds,
             reflect_bounds=reflect_bounds,
             seed=seed,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+            log_file=log_file,
         ),
     )
 
