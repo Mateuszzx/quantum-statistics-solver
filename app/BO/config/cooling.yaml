@@ -1,0 +1,21 @@
+physics:
+  n: 0.8
+  beta: 20.0
+  H_a: 0.0
+  dist_type: "FD"
+
+experiment:
+  schedules: ["Exponential", "Linear", "Sawtooth"]
+  start_temps: [10.0, 100.0, 1000.0]
+
+solver:
+  alpha: 0.99
+  step_decay: 0.99
+  min_iters: 1000
+  max_iters: 2000
+  stall_iters: 800
+  bounds: [[-10.0, 10.0]]
+  step_sigma: 10.0
+  scale_sigma_by_T: true
+  reflect_bounds: true
+  T_min: 1.e-9

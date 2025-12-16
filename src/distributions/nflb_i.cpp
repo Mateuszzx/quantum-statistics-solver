@@ -15,7 +15,7 @@ namespace qss::detail
 //   p0 f^3 + p1 f^2 + p2 f + p3 = 0
 // with p0 = e^x, p1 = 2 e^x + 8, p2 = -16, p3 = 8
 // Return 2 * f_root (so result is in [0, 2]).
-// Saturation: x >> 0 -> 0, x << 0 -> 2.
+// Saturation: x >> 0 -> 0, x << 0 -> 1.
 
 namespace
 {

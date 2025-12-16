@@ -37,9 +37,9 @@ inline double nflb_from_x(double x) noexcept
         return 0.5;
 
     const double ex = std::exp(x);
-    const double num = ex - std::sqrt(ex * ex + 8.0 * ex) + 8.0;
+    const double num = -std::sqrt(ex * ex + 8.0 * ex);
     const double den = ex + 8.0;
-    return num / (2*den); // in [0, 0.5]
+    return num / (2*den) + 1.0 / 2.0;
 }
 } // namespace
 

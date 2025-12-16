@@ -42,7 +42,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     N: int | None = None,
     solver_opts: _qss.CombinedSolverOptions | None = None,
     g: float = 2.0,
-    muB_eV_per_T: float = 5.788381806e-5,
+    muB_eV_per_T: float = 1.0,
     a0: float = -10.0,
     b0: float = 10.0,
     x0: float = 0.0,

@@ -92,8 +92,12 @@ venv: ## Create Python virtual environment
 	@echo "[info] Creating virtual environment: $(VENV_DIR)"
 	@if [ ! -x "$(PYTHON)" ]; then \
         python3 -m venv "$(VENV_DIR)"; \
-        $(PIP) install --upgrade pip wheel setuptools; \
+        $(PIP) install --upgrade pip wheel setuptools nanobind; \
     fi
+
+clean-venv:  ## Remove Python virtual environment
+	@echo "[info] Removing virtual environment: $(VENV_DIR)"
+	@rm -rf "$(VENV_DIR)"
 
 install-deps: venv ## Install build dependencies
 	@echo "[info] Installing build dependencies"
@@ -143,6 +147,7 @@ clean: ## Remove all build artifacts and caches
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
+full-clean: clean clean-venv docs-clean coverage-clean ## Full clean of all artifacts
 # ==============================================================================
 ## Testing
 # ==============================================================================
@@ -157,6 +162,13 @@ test-python: venv ## Run Python tests with pytest
 	@echo "[info] Running Python tests"
 	@$(PYTHON) -m pytest tests/python/ -v
 
+# ==============================================================================
+## GUI
+# ==============================================================================
+
+gui: ## Launch the GUI application
+	@echo "[info] Launching Quantum Statistics Solver GUI"
+	@streamlit run ./app/BO/gui/web_app.py
 # ==============================================================================
 ## Code Coverage
 # ==============================================================================

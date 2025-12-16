@@ -121,7 +121,7 @@ def entropy(
     df: pd.DataFrame,
     E: np.ndarray,
     g: float = 2.0,
-    muB_eV_per_T: float = 5.788381806e-5,
+    muB_eV_per_T: float = 1.0,
 ) -> pd.DataFrame:
     """
     Compute average entropy for each state in the chemical potential DataFrame.

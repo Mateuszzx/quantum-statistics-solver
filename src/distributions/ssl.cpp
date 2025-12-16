@@ -27,16 +27,18 @@ inline double ssl_from_x(double x, double x_prim) noexcept
     if (x > UP_EXP_LIMIT)
         return 0.0;
     if (x < DOWN_EXP_LIMIT)
-        return 0.5;
+        return 1. / (1. + std::exp(x-x_prim));
+
     const double ex = std::exp(-x);
     const double ex_prim = std::exp(-x_prim);
-    return (ex)  / (1.0 + ex + ex_prim);
+
+    return (ex)/ (1.0 + ex + ex_prim);
 }
 } // namespace
 
 double ssl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept
 {
-    return ssl_from_x(beta * (e_k - (spin_shift * delta) - mu), beta * (e_k + (spin_shift * delta) - mu));
+    return ssl_from_x(beta * (e_k + (spin_shift * delta) - mu), beta * (e_k - (spin_shift * delta) - mu));
 }
 
 } // namespace qss::detail

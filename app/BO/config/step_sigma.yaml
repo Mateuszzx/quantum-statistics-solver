@@ -1,0 +1,27 @@
+physics:
+  n_fixed: 0.8
+  beta_fixed: 5.0
+  H_a: 0.0
+  dist_type: "FD"
+
+ranges:
+  sigma_start: 0.1
+  sigma_end: 10.0
+  sigma_steps: 100
+
+solver:
+  T0: 100.0
+  alpha: 0.99
+  max_iters: 3000
+  # Additional available options:
+  # T_min: 1e-6
+  # sched: "Exponential"
+  # min_iters: 50
+  # stall_iters: 200
+  # step_decay: 0.99
+  # scale_sigma_by_T: true
+  # bounds: [[-10.0, 10.0]]
+  # reflect_bounds: true
+  # abs_tol: 1e-12
+  # rel_tol: 1e-9
+

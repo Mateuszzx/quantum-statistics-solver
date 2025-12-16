@@ -1,5 +1,6 @@
 #pragma once
 #include <stdexcept>
+#include <algorithm>
 #include "qss/distributions.hpp"
 #include "qss/types.hpp"
 
@@ -38,6 +39,7 @@ inline Mat distribution_total(const Mat& E, double mu, double beta,
 
     // Output has the same shape as E
     Mat out(ny, Vec(nx));
+    double result;
     for (std::size_t j = 0; j < ny; ++j) {
 
         auto spin_up = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_UP_SHIFT), dist);
@@ -47,7 +49,15 @@ inline Mat distribution_total(const Mat& E, double mu, double beta,
 
         // No splitting: copy f(E) results to output
         for (std::size_t i = 0; i < nx; ++i) {
-            out[j][i] = (*spin_up)[i] + (*spin_dn)[i];
+            result = std::clamp((*spin_up)[i], 0.0, 1.0) + std::clamp((*spin_dn)[i], 0.0, 1.0);
+            if (dist == DistType::FD  || dist == DistType::FLB)
+            {
+                out[j][i] = result;
+            }
+            else
+            {
+                out[j][i] = std::clamp(result, 0.0, 1.0);
+            }
         }
     }
 

@@ -51,14 +51,14 @@ static inline double next_T(const SimulatedAnnealingOptions &o, std::size_t k)
         // Linear decrease: T(k) = T0 * (1 - k/max_iters)
         if (o.max_iters == 0)
             return 0.0;
-        double frac = 1.0 - (double)k / (double)o.max_iters;
+        double frac = 1.0 - (double)k / (o.alpha * (double)o.max_iters);
         return std::max(0.0, o.T0 * frac);
     }
     case CoolingSchedule::Logarithmic:
         // Geman & Geman schedule: T(k) = T0 / log(k + 2)
         // Theoretically guarantees convergence to global optimum if T0 is high enough,
         // but is very slow in practice.
-        return o.T0 / std::log(2.0 + (double)k);
+        return o.T0 / std::log(2.0 + (double)k/o.alpha);
     case CoolingSchedule::Sawtooth:
     {
         // Periodic reheating (Restart strategy).
@@ -69,7 +69,7 @@ static inline double next_T(const SimulatedAnnealingOptions &o, std::size_t k)
         const double cycles = 5.0;
         double cycle_len = (double)o.max_iters / cycles;
         double rel_k = std::fmod((double)k, cycle_len);
-        return o.T0 * (1.0 - rel_k / cycle_len);
+        return o.T0 * (1.0 - rel_k / (o.alpha*cycle_len));
     }
     }
     return 0.0;

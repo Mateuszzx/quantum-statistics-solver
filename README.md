@@ -89,6 +89,7 @@ This project uses a `Makefile` to manage development tasks.
 ### Setup
 
 ```bash
+make venv
 source .venv/bin/activate
 make dev-install
 ```
