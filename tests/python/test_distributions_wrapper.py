@@ -42,6 +42,6 @@ class TestDistributionWrapper:
 
     def test_distribution_types(self):
         e_k = np.array([0.0])
-        for dt in ["FD", "FLB", "SSL","NFL", "NFLB", "NFLB_i"]:
+        for dt in ["FD", "FLB", "SSL","NFL", "NFLB"]:
             res = distribution(e_k, 0.0, 1.0, 0.0, 0, dt)
             assert res.shape == (1,)

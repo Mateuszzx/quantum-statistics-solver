@@ -15,7 +15,6 @@ DIST_COLORS = {
     "NFL": "purple",
     "NFLB": "green",
     "SSL": "black",
-    "NFLB_i": "orange"
 }
 
 DIST_LINESTYLES = {
@@ -24,7 +23,6 @@ DIST_LINESTYLES = {
     "NFL": "-.",
     "NFLB": ":",
     "SSL": (0, (3, 1, 1, 1)), # Dotted dash
-    "NFLB_i": (0, (5, 1)) # Long dash
 }
 
 def _setup_axis(ax, text: Optional[str] = None, text_pos: Tuple[float, float] = (0.025, 0.985),

@@ -1,12 +1,15 @@
-import yaml
 from pathlib import Path
+
+import yaml
+
 from qss.distributions import DistType
 from qss.solver_options import CoolingSchedule
 
-def load_config(config_name):
+
+def load_config(config_name: str | Path) -> dict:
     """Loads a YAML config file from the configs directory."""
     config_path = Path(__file__).parent.parent / "config" / f"{config_name}.yaml"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
 
     # Process Enums
@@ -25,8 +28,6 @@ def load_config(config_name):
             config["solver"]["bounds"] = [tuple(b) for b in config["solver"]["bounds"]]
 
     return config
-
-
 
 
 if __name__ == "__main__":

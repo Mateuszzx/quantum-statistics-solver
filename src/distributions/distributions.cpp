@@ -3,7 +3,7 @@
  * @brief Dispatch logic for statistical distributions.
  *
  * Implements the main `distribution` function overloads that dispatch to specific
- * distribution implementations (FD, FLB, NFLB, NFLB_i) based on the `DistType` enum.
+ * distribution implementations (FD, FLB, NFL, NFLB, SSL) based on the `DistType` enum.
  */
 
 #include "qss/distributions.hpp"
@@ -32,8 +32,6 @@ std::optional<double> distribution(double e_k,
         return nflb_distribution(e_k, mu, beta, delta, spin_shift);
     case DistType::SSL:
         return ssl_distribution(e_k, mu, beta, delta, spin_shift);
-    case DistType::NFLB_i:
-        return nflb_i_distribution(e_k, mu, beta, delta, spin_shift);
     default:
         return std::nullopt;
     }

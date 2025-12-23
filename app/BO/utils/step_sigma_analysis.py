@@ -1,14 +1,18 @@
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm.auto import tqdm
-from pathlib import Path
-from qss.solver_options import sa_defaults
-from .sa_helpers import run_single_experiment
-from .config_loader import load_config
 
-def run_step_sigma_experiment():
+from qss.solver_options import sa_defaults
+
+from .config_loader import load_config
+from .sa_helpers import run_single_experiment
+
+
+def run_step_sigma_experiment() -> pd.DataFrame:
     config = load_config("step_sigma")
 
     # Fix n and T
@@ -18,7 +22,7 @@ def run_step_sigma_experiment():
     step_sigmas = np.linspace(
         config["ranges"]["sigma_start"],
         config["ranges"]["sigma_end"],
-        config["ranges"]["sigma_steps"]
+        config["ranges"]["sigma_steps"],
     )
     iter_stats = []
 
@@ -30,10 +34,12 @@ def run_step_sigma_experiment():
         opts = sa_defaults(**opts_dict)
 
         res = run_single_experiment(
-            n_fixed, beta_fixed, opts,
-            H_a=config["physics"]["H_a"],
+            n_fixed,
+            beta_fixed,
+            opts,
+            h_a=config["physics"]["H_a"],
             dist_type=config["physics"]["dist_type"],
-            log_prefix="sigma_stat"
+            log_prefix="sigma_stat",
         )
         res["step_sigma"] = sigma
         iter_stats.append(res)
@@ -47,7 +53,8 @@ def run_step_sigma_experiment():
 
     return df_iter
 
-def plot_step_sigma_statistics(df_iter):
+
+def plot_step_sigma_statistics(df_iter: pd.DataFrame) -> None:
     n_fixed = 0.8
     beta_fixed = 5.0
 

@@ -5,10 +5,10 @@ physics:
 ranges:
   n_start: 0.01
   n_end: 0.99
-  n_steps: 20
-  beta_start_exp: -2
+  n_steps: 10
+  beta_start_exp: 0
   beta_end_exp: 3
-  beta_steps: 20
+  beta_steps: 10
 
 solver:
   T0: 100.0
@@ -19,12 +19,10 @@ solver:
   stall_iters: 500
   bounds: [[-10.0, 10.0]]
   step_sigma: 10.0
-  # Additional available options:
-  # T_min: 1e-6
-  # sched: "Exponential"  # Options: Exponential, Linear, Logarithmic, Sawtooth
-  # scale_sigma_by_T: true
-  # reflect_bounds: true
-  # abs_tol: 1e-12
-  # rel_tol: 1e-9
-  # seed: null
-
+  T_min: 1.e-6
+  sched: "Exponential"  # Options: Exponential, Linear, Logarithmic, Sawtooth
+  scale_sigma_by_T: true
+  reflect_bounds: true
+  abs_tol: 1.e-12
+  rel_tol: 1.e-9
+  seed: null

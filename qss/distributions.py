@@ -33,14 +33,12 @@ class DistType(Enum):
     FD : Fermi-Dirac distribution
     FLB : Fermi Liquid with Boltzmann distribution
     NFLB : Non-Fermi Liquid with Boltzmann distribution
-    NFLB_i : Non-Fermi Liquid with Boltzmann distribution (implicit form)
     """
 
     FD = "FD"
     FLB = "FLB"
     NFL = "NFL"
     NFLB = "NFLB"
-    NFLB_i = "NFLB_i"
     SSL = "SSL"
 
 
@@ -96,7 +94,6 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
         "FD": _qss.DistType.FD,
         "FLB": _qss.DistType.FLB,
         "NFLB": _qss.DistType.NFLB,
-        "NFLB_i": _qss.DistType.NFLB_i,
         "SSL": _qss.DistType.SSL,
         "NFL": _qss.DistType.NFL,
     }
@@ -133,7 +130,7 @@ def distribution(  # noqa: PLR0913
     spin_shift : int
         Spin shift (+1 or -1)
     dist_type : str or DistType
-        Distribution type: 'FD', 'FLB', 'NFLB', 'NFLB_i' or DistType enum value
+        Distribution type: 'FD', 'FLB', 'NFLB' or DistType enum value
 
     Returns
     -------

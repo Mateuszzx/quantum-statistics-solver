@@ -27,8 +27,7 @@ class PlotConfig:
         "FLB": "red",
         "NFL": "purple",
         "NFLB": "green",
-        "SSL": "black",
-        "NFLB_i": "orange"
+        "SSL": "black"
     })
 
     dist_linestyles: Dict[str, Union[str, Tuple]] = field(default_factory=lambda: {
@@ -36,8 +35,7 @@ class PlotConfig:
         "FLB": "--",
         "NFL": "-.",
         "NFLB": ":",
-        "SSL": (0, (3, 1, 1, 1)), # Dotted dash
-        "NFLB_i": (0, (5, 1)) # Long dash
+        "SSL": (0, (3, 1, 1, 1)) # Dotted dash
     })
 
     def get_color(self, distro: str) -> str:
@@ -650,7 +648,3 @@ class ScientificPlotter:
             width=width,
         )
         fig.show()
-
-
-
-

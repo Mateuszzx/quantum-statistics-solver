@@ -9,6 +9,5 @@ set(DISTRIBUTIONS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/nfl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/nflb.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ssl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/nflb_i.cpp
     PARENT_SCOPE  # Make visible to parent CMakeLists.txt
 )

@@ -39,7 +39,6 @@ void bind_distributions(nb::module_ &m)
         .value("FD", qss::DistType::FD)
         .value("FLB", qss::DistType::FLB)
         .value("NFLB", qss::DistType::NFLB)
-        .value("NFLB_i", qss::DistType::NFLB_i)
         .value("SSL", qss::DistType::SSL)
         .value("NFL", qss::DistType::NFL);
     // Scalar variant: returns float | None

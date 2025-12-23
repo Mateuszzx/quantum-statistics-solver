@@ -24,7 +24,7 @@ def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
     n : np.ndarray
         Occupancy per spin channel (values in [0, 1]).
     distro : str
-        Distribution type ("FD", "FLB", "NFLB", "NFLB_i").
+        Distribution type ("FD", "FLB", "NFLB").
 
     Returns
     -------
@@ -43,12 +43,6 @@ def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
             # FLB: S = S_fermion + n ln 2
             return -n * ln_n - (1 - n) * ln_1_n + n * np.log(2)  # type: ignore[no-any-return]
         case "NFLB":
-            # NFLB (valid for n_tot <= 1, i.e., n_single <= 0.5)
-            # S_single(x) = -x ln x + x ln 2 + (1-x) ln(1-x) - (1-2x) ln(1-2x)
-            ln_1_2n = safe_log(1 - 2 * n)
-            return -n * ln_n + n * np.log(2) + (1 - n) * ln_1_n - (1 - 2 * n) * ln_1_2n  # type: ignore[no-any-return]
-
-        case "NFLB_i":
             # NFLB (valid for n_tot <= 1, i.e., n_single <= 0.5)
             # S_single(x) = -x ln x + x ln 2 + (1-x) ln(1-x) - (1-2x) ln(1-2x)
             ln_1_2n = safe_log(1 - 2 * n)

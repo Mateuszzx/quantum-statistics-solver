@@ -26,7 +26,6 @@ enum class DistType
     NFL,    ///< Non-Fermi-Liquid distribution
     NFLB,   ///< Non-Fermi-Liquid with Boltzmann distribution
     SSL,   ///< Spin-Split Liquid distribution
-    NFLB_i  ///< Implicit Non-Fermi-Liquid with Boltzmann distribution
 };
 
 
@@ -118,10 +117,6 @@ double nflb_distribution(double e_k, double mu, double beta, double delta, int s
  */
 double ssl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
 
-/**
- * @brief Compute Implicit Non-Fermi-Liquid with Boltzmann distribution for a single state.
- * @internal
- */
-double nflb_i_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+
 
 } // namespace qss::detail

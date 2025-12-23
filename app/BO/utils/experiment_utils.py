@@ -1,33 +1,29 @@
-import uuid
-import pandas as pd
 from pathlib import Path
+import uuid
+
+from numpy.typing import NDArray
+import pandas as pd
 from tqdm.auto import tqdm
-import sys
-import os
 
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-from qss.solver_options import sa_defaults, CoolingSchedule
 from qss.chemical_potential import chemical_potential
+from qss.distributions import DistType
+from qss.solver_options import CombinedSolverOptions, CoolingSchedule, sa_defaults
 
 
-def run_sa_experiment(
-    n_vals,
-    beta_vals,
-    H_a_vals,
-    distros,
-    e_k,
-    N=100,
-    solver_opts=None,
-    logs_dir="logs",
-    output_file="chemical_potential_experiment_results.csv",
-    x0=0.0,
-    a0=-10.0,
-    b0=10.0
-):
+def run_sa_experiment(  # noqa: PLR0913
+    n_vals: list[float],
+    beta_vals: list[float],
+    h_a_vals: list[float],
+    distros: list[DistType],
+    e_k: NDArray,
+    N: int = 100,  # noqa: N803
+    solver_opts: CombinedSolverOptions | None = None,
+    logs_dir: str = "logs",
+    output_file: str | Path = "chemical_potential_experiment_results.csv",
+    x0: float = 0.0,
+    a0: float = -10.0,
+    b0: float = 10.0,
+) -> pd.DataFrame:
     """
     Runs the Simulated Annealing experiment for chemical potential.
 
@@ -37,8 +33,8 @@ def run_sa_experiment(
         Values of band filling (n).
     beta_vals : array-like
         Values of inverse temperature (beta).
-    H_a_vals : array-like
-        Values of magnetic field (H_a).
+    h_a_vals : array-like
+        Values of magnetic field (h_a).
     distros : list
         List of DistType distributions to test.
     e_k : array-like
@@ -70,16 +66,16 @@ def run_sa_experiment(
         py_opts = sa_defaults(
             T0=1e3,
             T_min=1e-9,
-            alpha=0.999,       # Slow cooling
-            max_iters=50000,   # High total iters
-            min_iters=2000,    # Force exploration
+            alpha=0.999,  # Slow cooling
+            max_iters=50000,  # High total iters
+            min_iters=2000,  # Force exploration
             stall_iters=1000,  # High stall tolerance
             step_decay=0.999,  # Slow step decay
-            step_sigma=5.0,    # High initial sigma
-            bounds=[(-10., 10.)],
+            step_sigma=5.0,  # High initial sigma
+            bounds=[(-10.0, 10.0)],
             scale_sigma_by_T=True,
             reflect_bounds=True,
-            sched=CoolingSchedule.Exponential
+            sched=CoolingSchedule.Exponential,
         )
         native_opts = py_opts.to_qss()
     else:
@@ -92,23 +88,26 @@ def run_sa_experiment(
     results = []
 
     # Calculate total iterations for progress bar
-    total_sims = len(distros) * len(beta_vals) * len(H_a_vals) * len(n_vals)
+    total_sims = len(distros) * len(beta_vals) * len(h_a_vals) * len(n_vals)
 
     with tqdm(total=total_sims, desc="Simulations") as pbar:
         for d in distros:
             for b in beta_vals:
-                for h in H_a_vals:
+                for h in h_a_vals:
                     for n_val in n_vals:
                         try:
                             # Generate unique log filename
                             rnd_suffix = uuid.uuid4().hex[:6]
-                            dist_name = str(d).split('.')[-1] # e.g. "FD"
-                            log_filename = logs_path / f"log_sa_{dist_name}_b{b:.2f}_n{n_val:.2f}_H{h:.2f}_{rnd_suffix}.csv"
+                            dist_name = str(d).split(".")[-1]  # e.g. "FD"
+                            log_filename = (
+                                logs_path
+                                / f"log_sa_{dist_name}_b{b:.2f}_n{n_val:.2f}_H{h:.2f}_{rnd_suffix}.csv"
+                            )
 
                             # Set log file in options
-                            if hasattr(native_opts, 'log_file'):
+                            if hasattr(native_opts, "log_file"):
                                 native_opts.log_file = str(log_filename)
-                            elif hasattr(native_opts, 'sa'):
+                            elif hasattr(native_opts, "sa"):
                                 native_opts.sa.log_file = str(log_filename)
 
                             # Run calculation
@@ -139,6 +138,5 @@ def run_sa_experiment(
         final_df.to_csv(output_file)
         print(f"\nExperiment finished. Aggregated results saved to: {output_file}")
         return final_df
-    else:
-        print("\nNo results collected.")
-        return pd.DataFrame()
+    print("\nNo results collected.")
+    return pd.DataFrame()
