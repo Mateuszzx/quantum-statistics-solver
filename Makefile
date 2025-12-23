@@ -205,11 +205,13 @@ coverage-cpp: ## Generate C++ coverage report (requires lcov/gcovr)
 	@if command -v gcovr >/dev/null 2>&1; then \
         gcovr -r . --object-directory "$(BUILD_DIR)" \
             --html --html-details \
+            --gcov-ignore-errors=no_working_dir_found \
             -o "$(BUILD_DIR)/coverage/cpp/index.html" \
             --exclude 'tests/.*' --exclude 'external/.*' \
             --exclude '.*nanobind.*' --exclude '.*build/.*' \
+            --exclude '.*_deps/.*' \
             --exclude 'app/.*' \
-			--exclude 'src/bindings/.*';\
+			--exclude 'src/bindings/.*'; \
     else \
         lcov --capture --directory "$(BUILD_DIR)" \
             --output-file "$(BUILD_DIR)/coverage/cpp/coverage.info" \
