@@ -237,7 +237,7 @@ class ScientificPlotter:
 
         total_rows = num_betas * n_num * (1 if is_H_zero else 2)
 
-        fig, ax = plt.subplots(nrows=total_rows, ncols=1, figsize=(figsize[0], figsize[1] * total_rows))
+        fig, ax = plt.subplots(nrows=1, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
         ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
         delta = H * 0.5 * g * mu_B
@@ -305,7 +305,7 @@ class ScientificPlotter:
                                      linewidth=2, label=distro)
 
                     self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_plus, xlabel=slice_label, ylabel="spin occupancy $n_{k+}$",
+                    self._setup_axis(ax_plus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\uparrow}$",
                                      text=text, text_pos=text_pos, ylims=ylims)
                     ax_plus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
                     ax_plus.set_xlim(0, np.pi)
@@ -321,7 +321,7 @@ class ScientificPlotter:
                                       linewidth=2, label=distro)
 
                     self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_minus, xlabel=slice_label, ylabel="spin occupancy $n_{k-}$",
+                    self._setup_axis(ax_minus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\downarrow}$",
                                      text=text, text_pos=text_pos, ylims=ylims)
                     ax_minus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
                     ax_minus.set_xlim(0, np.pi)
