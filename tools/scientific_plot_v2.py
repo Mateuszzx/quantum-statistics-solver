@@ -235,9 +235,9 @@ class ScientificPlotter:
         num_betas = len(betas_arr)
         is_H_zero = np.isclose(H, 0.0)
 
-        total_rows = num_betas * n_num * (1 if is_H_zero else 2)
+        total_rows =  n_num * (1 if is_H_zero else 2)
 
-        fig, ax = plt.subplots(nrows=1, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
+        fig, ax = plt.subplots(nrows=num_betas, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
         ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
         delta = H * 0.5 * g * mu_B
