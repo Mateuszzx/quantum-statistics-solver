@@ -14,13 +14,14 @@ from qss import distributions as dist
 @dataclass
 class PlotConfig:
     """Configuration for plot styling."""
-    fontsize: int = 12
-    ticks_len: int = 8
+    fontsize: int = 24
+    ticks_len: int = 10
     ticks_width: int = 3
-    spine_width: float = 1.5
-    legend_fontsize: int = 12
+    spine_width: float = 3
+    legend_fontsize: int = 16
     legend_loc: str = "best"
     cmap: str = "plasma"
+    linewidth: float = 3.0
 
     dist_colors: Dict[str, str] = field(default_factory=lambda: {
         "FD": "blue",
@@ -93,6 +94,7 @@ class ScientificPlotter:
 
         for spine in ax.spines.values():
             spine.set_linewidth(cfg.spine_width)
+            spine.set_color('black')
 
         if xlims:
             ax.set_xlim(xlims)
@@ -121,6 +123,11 @@ class ScientificPlotter:
 
         for i, log_v in enumerate(log_vals):
             ax2.axhline(log_v, color=supp_colors[i], linestyle='--', linewidth=1.5, alpha=0.7)
+
+        for spine in ax2.spines.values():
+            spine.set_linewidth(cfg.spine_width)
+            spine.set_color('black')
+
 
     def _calculate_mu(self, e_k: np.ndarray, distro: str, n: float, beta: float, H: float, g: float, mu_B: float, N: Optional[int] = None) -> float:
         _solver_options = (so.brent_defaults(abs_tol=1e-9,
@@ -286,7 +293,7 @@ class ScientificPlotter:
                         current_ax.plot(x_axis, y_vals,
                                         color=self.config.get_color(distro),
                                         linestyle=self.config.get_linestyle(distro),
-                                        linewidth=2, label=distro)
+                                        linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(current_ax, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(current_ax, xlabel=slice_label, ylabel="spin occupancy $n_k$",
@@ -302,7 +309,7 @@ class ScientificPlotter:
                         ax_plus.plot(x_axis, y_vals,
                                      color=self.config.get_color(distro),
                                      linestyle=self.config.get_linestyle(distro),
-                                     linewidth=2, label=distro)
+                                     linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(ax_plus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\uparrow}$",
@@ -318,7 +325,7 @@ class ScientificPlotter:
                         ax_minus.plot(x_axis, y_vals,
                                       color=self.config.get_color(distro),
                                       linestyle=self.config.get_linestyle(distro),
-                                      linewidth=2, label=distro)
+                                      linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(ax_minus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\downarrow}$",
@@ -431,8 +438,6 @@ class ScientificPlotter:
                            text_pos: Tuple[float, float] = (0.025, 0.985),
                            show_log_vals: bool = False,
                            xscale: str = "linear",
-                           blue_line: bool = False,
-                           ssl_theory: bool = False,
                            t_prim: float = 0.25,
                            N: int = 100) -> None:
 
@@ -486,19 +491,12 @@ class ScientificPlotter:
                     x_vals = subset.index.values
 
                     color = self.config.get_color(distro)
-                    if blue_line and distro == "FD":
-                         current_ax.plot(x_vals, y_vals, label=distro, color=color, linewidth=2)
-                    else:
-                         current_ax.plot(x_vals, y_vals, label=distro, color=color, linewidth=2)
+                    current_ax.plot(x_vals, y_vals, label=distro, color=color, linewidth=self.config.linewidth)
+
 
                 except KeyError:
                     # print(f"Warning: Data not found for {distro} with params {current_params}")
                     continue
-
-            if ssl_theory and x_param == "n":
-                 n_vals = np.linspace(0.01, 0.99, 100)
-                 y_theory = n_vals * np.log(2) - n_vals * np.log(n_vals) - (1 - n_vals) * np.log(1 - n_vals)
-                 current_ax.plot(n_vals, y_theory, color='black', linestyle='--', label="SSL", linewidth=1.5)
 
             # Text label
             text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$"
@@ -513,9 +511,9 @@ class ScientificPlotter:
             }
 
             self._setup_axis(current_ax, xlabel=xlabel_map.get(x_param, x_param), ylabel=y_label,
-                             text=text, text_pos=text_pos, xlims=xlims, ylims=ylims,
-                             show_log_vals=show_log_vals, xscale=xscale,
-                             show_legend=(j==0))
+                            text=text, text_pos=text_pos, xlims=xlims, ylims=ylims,
+                            show_log_vals=show_log_vals, xscale=xscale,
+                            show_legend=(j==0))
 
     def plot_3d_results(self,
         results: pd.DataFrame,
