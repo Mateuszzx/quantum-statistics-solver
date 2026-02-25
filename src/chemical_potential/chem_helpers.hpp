@@ -17,6 +17,7 @@ namespace qss::chem {
  * @param mu Chemical potential.
  * @param beta Inverse temperature.
  * @param dist Distribution type (FD/FLB/NFLB/...).
+ * @param U double filling parameter
  * @param delta Zeeman shift (g*muB*H/2) in energy units.
  * @return Mat Total distribution matrix.
  *
@@ -26,7 +27,7 @@ namespace qss::chem {
  *   (summing up and down channels point-by-point)
  */
 inline Mat distribution_total(const Mat& E, double mu, double beta,
-                            DistType dist, double delta) {
+                            DistType dist, double U, double delta) {
     // Dimensions of the energy matrix
     const std::size_t ny = E.size();
     const std::size_t nx = ny ? E[0].size() : 0;
@@ -42,8 +43,8 @@ inline Mat distribution_total(const Mat& E, double mu, double beta,
     double result;
     for (std::size_t j = 0; j < ny; ++j) {
 
-        auto spin_up = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_UP_SHIFT), dist);
-        auto spin_dn = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_DN_SHIFT), dist);
+        auto spin_up = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist);
+        auto spin_dn = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_DN_SHIFT), U, dist);
         if (!spin_up || !spin_dn)
             throw std::runtime_error("distribution() failed");
 

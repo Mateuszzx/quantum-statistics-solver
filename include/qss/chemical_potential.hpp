@@ -33,6 +33,7 @@ struct ChemicalPotentialResult
  * @param N Linear size of the lattice (used for validation).
  * @param E Energy dispersion matrix (2D).
  * @param H_a_T Applied magnetic field in Tesla.
+ * @param U double filling parameter (Hubbard U, only relevant for certain distributions).
  * @param g Landé g-factor.
  * @param muB_eV_per_T Bohr magneton in eV/T.
  * @param solver_opts Configuration options for the numerical solver.
@@ -48,6 +49,7 @@ ChemicalPotentialResult chemical_potential_B(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,
@@ -65,6 +67,7 @@ ChemicalPotentialResult chemical_potential_B(
  * @param N Linear size of the lattice.
  * @param E Energy dispersion matrix.
  * @param H_a_T Applied magnetic field in Tesla.
+ * @param U double filling parameter
  * @param g Landé g-factor.
  * @param muB_eV_per_T Bohr magneton in eV/T.
  * @param solver_opts Solver options.
@@ -80,6 +83,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,
@@ -96,6 +100,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
  * @param N Linear size of the lattice.
  * @param E Energy dispersion matrix.
  * @param H_a_T Applied magnetic field in Tesla.
+ * @param U double filling parameter
  * @param g Landé g-factor.
  * @param muB_eV_per_T Bohr magneton in eV/T.
  * @param solver_opts Solver options.
@@ -111,6 +116,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,

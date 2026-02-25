@@ -28,7 +28,9 @@ class PlotConfig:
         "FLB": "red",
         "NFL": "purple",
         "NFLB": "green",
-        "SSL": "black"
+        "SSL": "black",
+        "HUBBARD": "orange",
+        "HUBBARD ($n_{kd}$)": "brown"
     })
 
     dist_linestyles: Dict[str, Union[str, Tuple]] = field(default_factory=lambda: {
@@ -36,7 +38,9 @@ class PlotConfig:
         "FLB": "--",
         "NFL": "-.",
         "NFLB": ":",
-        "SSL": (0, (3, 1, 1, 1)) # Dotted dash
+        "SSL": (0, (3, 1, 1, 1)), # Dotted dash,
+        "HUBBARD": (0, (5, 1)), # Dashed with longer dashes
+        "HUBBARD ($n_{kd}$)": (0, (1, 1))
     })
 
     def get_color(self, distro: str) -> str:
@@ -226,6 +230,8 @@ class ScientificPlotter:
                                     ylims: Optional[Tuple[float, float]] = (-0.1, 1.1),
                                     text_pos: Tuple[float,float]=(0.025, .985),
                                     bz_inset_pos: Tuple[float, float, float, float] = (0.65, 0.68, 0.25, 0.25),
+                                    U: float = 0.0,
+                                    n_kd: bool = False,
                                     N: Optional[int] = None) -> None:
 
         if dim != 2 or kx is None:
@@ -273,8 +279,8 @@ class ScientificPlotter:
                 for distro in distributions:
                     mu = self._calculate_mu(e_k, distro, n_val, beta, H, g, mu_B, N)
 
-                    n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro)
-                    n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro)
+                    n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd = n_kd)
+                    n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd = n_kd)
 
                     if distro in ["NFL", "NFLB", "SSL"]:
                         n_k_plus = np.clip(n_k_plus, 0, 1.0)
@@ -283,7 +289,7 @@ class ScientificPlotter:
                     data_per_distro[distro] = (n_k_plus, n_k_minus)
 
                 # Plotting
-                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {1/beta:.1e}$\n$\\mu H / |t| = {H}$"
+                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {1/beta:.1e}$\n$\\mu H / |t| = {H}$\n$U = {U}$"
 
                 if is_H_zero:
                     current_ax = ax[plot_idx]
@@ -344,6 +350,8 @@ class ScientificPlotter:
                                     distributions: List[str] = ["FD", "FLB", "NFL"],
                                     figsize: Tuple[int, int] = (14, 6),
                                     t_prim: float = 0.25,
+                                    U: float = 0.0,
+                                    n_kd: bool = False,
                                     N: Optional[int] = None) -> None:
 
         if dim != 2 or kx is None or ky is None:
@@ -366,8 +374,8 @@ class ScientificPlotter:
             # Spin split plot for single distribution
             distro = distributions[0]
             mu = self._calculate_mu(e_k, distro, n, beta, H, g, mu_B, N)
-            n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro)
-            n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro)
+            n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd)
+            n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
 
             fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=figsize, sharey=True)
 
@@ -402,14 +410,14 @@ class ScientificPlotter:
             for i, distro in enumerate(distributions):
                 mu = self._calculate_mu(e_k, distro, n, beta, H, g, mu_B, N)
                 # Summing spins if H=0 or just total occupancy
-                n_k = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro) + \
-                      dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro)
+                n_k = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd) + \
+                      dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
 
                 vm = vmax_vals[i] if i < len(vmax_vals) else 1.0
                 cf = ax[i].imshow(n_k, extent=extent, origin='lower', aspect='auto', cmap=self.config.cmap, vmin=0, vmax=vm)
 
                 self._setup_axis(ax[i], xlabel="$k_x$", ylabel="$k_y$" if i==0 else None, title=f"{distro}",
-                                 show_legend=False, show_grid=False)
+                                show_legend=False, show_grid=False)
 
                 ax[i].set_xticks(ticks)
                 ax[i].set_xticklabels(tick_labels)
@@ -439,6 +447,8 @@ class ScientificPlotter:
                            show_log_vals: bool = False,
                            xscale: str = "linear",
                            t_prim: float = 0.25,
+                           U: float = 0.0,
+                           n_kd: bool = False,
                            N: int = 100) -> None:
 
         if subplots_param and subplots_vals is not None:
@@ -485,6 +495,7 @@ class ScientificPlotter:
                     if "n" in slicer: subset = subset.xs(slicer["n"], level="n")
                     if "k_BT" in slicer: subset = subset.xs(slicer["k_BT"], level="k_BT")
                     if "H_a" in slicer: subset = subset.xs(slicer["H_a"], level="H_a")
+                    if "U" in slicer: subset = subset.xs(slicer["U"], level="U")
 
                     subset = subset.sort_index()
                     y_vals = subset[y_col].values
@@ -499,7 +510,7 @@ class ScientificPlotter:
                     continue
 
             # Text label
-            text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$"
+            text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$U = {U}$"
             if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
             if isinstance(k_BT_val, (int, float)): text += f"\n$k_B T/|t| = {k_BT_val:.2e}$"
             if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
@@ -524,6 +535,7 @@ class ScientificPlotter:
         z_label: str,
         distros: List[str] = ["FD", "FLB", "NFLB"],
         z_col: str = "mu",
+        U: float = 0.0,
         figsize: Tuple[int, int] = (15, 5),
         fontsize: int = 10
     ) -> None:

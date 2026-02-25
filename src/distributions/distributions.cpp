@@ -17,7 +17,9 @@ std::optional<double> distribution(double e_k,
                                 double beta,
                                 double delta,
                                 int spin_shift,
-                                DistType dist) noexcept
+                                double U,
+                                DistType dist,
+                                bool n_kd) noexcept
 {
     using namespace qss::detail;
     switch (dist)
@@ -32,6 +34,8 @@ std::optional<double> distribution(double e_k,
         return nflb_distribution(e_k, mu, beta, delta, spin_shift);
     case DistType::SSL:
         return ssl_distribution(e_k, mu, beta, delta, spin_shift);
+    case DistType::HUBBARD:
+        return hubbard_distribution(e_k, mu, beta, delta, spin_shift, U, n_kd);
     default:
         return std::nullopt;
     }
@@ -42,7 +46,9 @@ std::optional<Vec> distribution(const Vec &e_k,
                                 double beta,
                                 double delta,
                                 int spin_shift,
-                                DistType dist)
+                                double U,
+                                DistType dist,
+                                bool n_kd)
 {
 
     using namespace qss::detail;
@@ -51,7 +57,7 @@ std::optional<Vec> distribution(const Vec &e_k,
 
     for (std::size_t i = 0; i < n; ++i)
     {
-        auto val = distribution(e_k[i], mu, beta, delta, spin_shift, dist);
+        auto val = distribution(e_k[i], mu, beta, delta, spin_shift, U, dist, n_kd);
         if (!val)
             return std::nullopt;
         out[i] = *val;
@@ -65,13 +71,15 @@ std::optional<Mat> distribution(const Mat &e_k,
                                 double beta,
                                 double delta,
                                 int spin_shift,
-                                DistType dist)
+                                double U,
+                                DistType dist,
+                                bool n_kd)
 {
     const std::size_t rows = e_k.size();
     Mat out(rows);
     for (std::size_t i = 0; i < rows; ++i)
     {
-        auto row_res = distribution(e_k[i], mu, beta, delta, spin_shift, dist);
+        auto row_res = distribution(e_k[i], mu, beta, delta, spin_shift, U, dist, n_kd);
         if (!row_res)
             return std::nullopt;
         out[i] = std::move(*row_res);

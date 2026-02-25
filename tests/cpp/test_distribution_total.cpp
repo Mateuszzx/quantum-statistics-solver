@@ -23,10 +23,10 @@ TEST(DistributionTotal, DeltaZeroMatchesSingleChannel) {
     DistType dist = DistType::FD;
 
     // Oczekiwany: zwykły rozkład
-    auto f_expected = qss::distribution(E[0], mu, beta, 0.0, 0, dist);
+    auto f_expected = qss::distribution(E[0], mu, beta, 0.0, 0, 0.0, dist);
     ASSERT_TRUE(f_expected);
 
-    Mat total = distribution_total(E, mu, beta, dist, 0.0);
+    Mat total = distribution_total(E, mu, beta, dist, 0.0, 0.0);
     // Sprawdź pierwszy wiersz i kilka punktów
     for (std::size_t i = 0; i < N; ++i)
         EXPECT_NEAR(total[0][i], 2.0 * (*f_expected)[i], 1e-12);
@@ -40,7 +40,7 @@ TEST(DistributionTotal, SpinSplittingEqualsSumOfShiftedChannels) {
     double delta = 0.2;
     DistType dist = DistType::FD;
 
-    Mat total = distribution_total(E, mu, beta, dist, delta);
+    Mat total = distribution_total(E, mu, beta, dist, 0.0, delta);
 
     for (std::size_t j = 0; j < N; ++j) {
         // Przygotuj dwa wektory energii
@@ -49,8 +49,8 @@ TEST(DistributionTotal, SpinSplittingEqualsSumOfShiftedChannels) {
             up[i] = E[j][i] - delta;
             dn[i] = E[j][i] + delta;
         }
-        auto f_up = qss::distribution(up, mu, beta, 0.0, 0, dist);
-        auto f_dn = qss::distribution(dn, mu, beta, 0.0, 0, dist);
+        auto f_up = qss::distribution(up, mu, beta, 0.0, 0, 0.0, dist);
+        auto f_dn = qss::distribution(dn, mu, beta, 0.0, 0, 0.0, dist);
         ASSERT_TRUE(f_up && f_dn);
         for (std::size_t i = 0; i < N; ++i) {
             double expected = (*f_up)[i] + (*f_dn)[i];
@@ -67,8 +67,8 @@ TEST(DistributionTotal, SymmetryInDelta) {
     double delta = 0.35;
     DistType dist = DistType::FD;
 
-    Mat plusD = distribution_total(E, mu, beta, dist, delta);
-    Mat minusD = distribution_total(E, mu, beta, dist, -delta);
+    Mat plusD = distribution_total(E, mu, beta, dist, 0.0, delta);
+    Mat minusD = distribution_total(E, mu, beta, dist, 0.0, -delta);
 
     for (std::size_t j = 0; j < N; ++j)
         for (std::size_t i = 0; i < N; ++i)
@@ -81,7 +81,7 @@ TEST(DistributionTotal, ThrowsOnRaggedRows) {
     E.push_back(Vec{0.5, 1.5}); // krótszy wiersz
 
     EXPECT_THROW(
-        (void)distribution_total(E, 0.0, 1.0, DistType::FD, 0.0),
+        (void)distribution_total(E, 0.0, 1.0, DistType::FD, 0.0, 0.0),
         std::runtime_error);
 }
 
@@ -93,7 +93,7 @@ TEST(DistributionTotal, FiniteValues) {
     double delta = 0.15;
     DistType dist = DistType::FD;
 
-    Mat total = distribution_total(E, mu, beta, dist, delta);
+    Mat total = distribution_total(E, mu, beta, dist, 0.0, delta);
     for (auto &row : total)
         for (double v : row)
             EXPECT_TRUE(std::isfinite(v));

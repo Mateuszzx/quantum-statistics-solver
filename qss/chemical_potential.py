@@ -39,6 +39,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     beta_vals: Sequence[float],
     H_a_vals: Sequence[float],
     E: np.ndarray,
+    U: float = 0.0,
     N: int | None = None,
     solver_opts: _qss.CombinedSolverOptions | None = None,
     g: float = 2.0,
@@ -62,6 +63,8 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
         Applied magnetic field values (Tesla)
     E : ndarray
         Energy matrix (square 2D array)
+    U : float
+        Hubbard U parameter (default: 0.0)
     N : int, optional
         Effective system size (defaults to E.shape[0])
     solver_opts : CombinedSolverOptions, optional
@@ -130,6 +133,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
                     N_eff,
                     E,
                     h_f,
+                    float(U),
                     float(g),
                     float(muB_eV_per_T),
                     solver_opts_native,

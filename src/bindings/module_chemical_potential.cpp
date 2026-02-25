@@ -44,9 +44,9 @@ void bind_chemical_potential(nb::module_ &m) {
     // Scalar binding ONLY - No GIL release, simple and safe
     m.def(
         "chemical_potential_B_scalar",
-        [](qss::DistType dist, double n_assumed, double beta, double H_a_T, int N, Mat2 E,
-           double g, double muB_eV_per_T, const qss::CombinedSolverOptions &opts,
-           double a0, double b0, double x0) {
+        [](qss::DistType dist, double n_assumed, double beta, double H_a_T, int N, Mat2 E, double U,
+            double g, double muB_eV_per_T, const qss::CombinedSolverOptions &opts,
+            double a0, double b0, double x0) {
 
             size_t nx = static_cast<size_t>(N);
             if (E.shape(0) != nx || E.shape(1) != nx)
@@ -57,12 +57,12 @@ void bind_chemical_potential(nb::module_ &m) {
 
             // Call C++ logic directly
             auto R = qss::chemical_potential_B(dist, beta, n_assumed, static_cast<double>(N),
-                                               Em, H_a_T, g, muB_eV_per_T, opts, a0, b0, x0);
+                                                Em, H_a_T, U, g, muB_eV_per_T, opts, a0, b0, x0);
 
             return nb::make_tuple(R.mu, R.iterations, R.converged, R.error);
         },
         arg("distro"), arg("n_assumed"), arg("beta"), arg("H_a_T"), arg("N"), arg("E"),
-        arg("g") = 2.0, arg("muB_eV_per_T") = qss::QSS_MU_B_EV_PER_T,
+        arg("U") = 0.0, arg("g") = 2.0, arg("muB_eV_per_T") = qss::QSS_MU_B_EV_PER_T,
         arg("opts") = qss::CombinedSolverOptions(), arg("a0") = -10.0, arg("b0") = 10.0, arg("x0") = 0.0);
 
     m.def(
@@ -73,6 +73,7 @@ void bind_chemical_potential(nb::module_ &m) {
            double N,
            Mat2 E,
            double H_a,
+           double U,
            double g,
            double muB_eV_per_T,
            const qss::CombinedSolverOptions &opts,
@@ -87,6 +88,7 @@ void bind_chemical_potential(nb::module_ &m) {
                 N,
                 Em,
                 H_a,
+                U,
                 g,
                 muB_eV_per_T,
                 opts,
@@ -105,6 +107,7 @@ void bind_chemical_potential(nb::module_ &m) {
         arg("N"),
         arg("E"),
         arg("H_a"),
+        arg("U"),
         arg("g"),
         arg("muB_eV_per_T"),
         arg("solver_opts"),

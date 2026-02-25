@@ -26,6 +26,7 @@ enum class DistType
     NFL,    ///< Non-Fermi-Liquid distribution
     NFLB,   ///< Non-Fermi-Liquid with Boltzmann distribution
     SSL,   ///< Spin-Split Liquid distribution
+    HUBBARD, ///< Hubbard distribution (includes U parameter)
 };
 
 
@@ -44,7 +45,9 @@ std::optional<double> distribution(double e_k,
                                    double beta,
                                    double delta,
                                    int spin_shift,
-                                   DistType dist) noexcept;
+                                   double U,
+                                   DistType dist,
+                                   bool n_kd = false) noexcept;
 
 /**
  * @brief Calculate the distribution function for a vector of energy states.
@@ -61,7 +64,9 @@ std::optional<Vec> distribution(const Vec &e_k,
                                 double beta,
                                 double delta,
                                 int spin_shift,
-                                DistType dist);
+                                double U,
+                                DistType dist,
+                                bool n_kd = false);
 
 /**
  * @brief Calculate the distribution function for a 2D matrix of energy states.
@@ -78,7 +83,9 @@ std::optional<Mat> distribution(const Mat &e_k,
                                 double beta,
                                 double delta,
                                 int spin_shift,
-                                DistType dist);
+                                double U,
+                                DistType dist,
+                                bool n_kd = false);
 
 } // namespace qss
 
@@ -117,6 +124,10 @@ double nflb_distribution(double e_k, double mu, double beta, double delta, int s
  */
 double ssl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
 
-
+/**
+ * @brief Compute Hubbard distribution for a single state.
+ * @internal
+ */
+double hubbard_distribution(double e_k, double mu, double beta, double delta, int spin_shift, double U, bool n_kd) noexcept;
 
 } // namespace qss::detail

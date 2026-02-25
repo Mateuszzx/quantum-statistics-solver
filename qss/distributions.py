@@ -40,6 +40,7 @@ class DistType(Enum):
     NFL = "NFL"
     NFLB = "NFLB"
     SSL = "SSL"
+    HUBBARD = "HUBBARD"
 
 
 def prepare_2D_lattice_data(
@@ -96,6 +97,7 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
         "NFLB": _qss.DistType.NFLB,
         "SSL": _qss.DistType.SSL,
         "NFL": _qss.DistType.NFL,
+        "HUBBARD": _qss.DistType.HUBBARD,
     }
 
     if dist_type not in dist_map:
@@ -112,7 +114,9 @@ def distribution(  # noqa: PLR0913
     beta: float,
     delta: float,
     spin_shift: int,
+    U: float,
     dist_type: str | DistType,
+    n_kd: bool = False
 ) -> np.ndarray:
     """
     Compute distribution values for given energies using specified distribution type.
@@ -160,13 +164,14 @@ def distribution(  # noqa: PLR0913
     e_k = np.asarray(e_k, dtype=np.float64)
     cpp_dist_type = _get_cpp_dist_type(dist_type)
 
+
     if e_k.ndim == 1:
         return cast(
-            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k)
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, U, e_k,n_kd)
         )
     if e_k.ndim == 2:
         return cast(
-            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, e_k)
+            NDArray[np.floating], _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, U, e_k,n_kd)
         )
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 

@@ -110,7 +110,7 @@ class TestChemicalPotential:
         # Verify that the options were passed to the backend
         # The 9th argument to chemical_potential_B_multi_n is solver_opts
         args, _ = mock_calc.call_args
-        passed_opts = args[8]
+        passed_opts = args[9]
         assert isinstance(passed_opts, _qss.CombinedSolverOptions)
         assert passed_opts.root.abs_tol == pytest.approx(1e-9)
 
@@ -187,6 +187,6 @@ class TestChemicalPotential:
         )
 
         args, _ = mock_calc.call_args
-        passed_opts = args[8]
+        passed_opts = args[9]
         assert passed_opts is native_opts
         assert passed_opts.root.abs_tol == pytest.approx(1e-7)

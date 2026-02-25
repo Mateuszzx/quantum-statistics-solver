@@ -30,6 +30,7 @@ TEST(ChemicalPotential, ZeroField_HalfOccupancy_muZero)
 										   (double)N,
 										   E,
 										   /*H_a_T*/ 0.0,
+										   /*U*/ 0.0,
 										   /*g*/ 2.0,
 										   /*muB*/ QSS_MU_B_EV_PER_T,
 										   opts,
@@ -53,6 +54,7 @@ TEST(ChemicalPotential, VectorBetas_muZero)
 										 (double)N,
 										 E,
 										 /*H_a_T*/ 0.0,
+										 /*U*/ 0.0,
 										 /*g*/ 2.0,
 										 /*muB*/ QSS_MU_B_EV_PER_T,
 										 opts,
@@ -82,6 +84,7 @@ TEST(ChemicalPotential, NonZeroField_TwoChannelsSum_muZeroFor_n2)
 										   (double)N,
 										   E,
 										   H,
+										   0.0,
 										   g,
 										   muB,
 										   opts,
@@ -101,6 +104,7 @@ TEST(ChemicalPotential, ThrowsOnEmptyE)
 									1.0,
 									0.0,
 									E,
+									0.0,
 									0.0,
 									2.0,
 									QSS_MU_B_EV_PER_T,
@@ -122,6 +126,7 @@ TEST(ChemicalPotential, ThrowsOnShapeMismatch)
 									1.0,
 									/*N*/ 4.0,
 									E,
+									0.0,
 									0.0,
 									2.0,
 									QSS_MU_B_EV_PER_T,
@@ -146,7 +151,7 @@ TEST(ChemicalPotential, MultiN) {
         n_targets,
         (double)N,
         E,
-        0.0, 2.0, QSS_MU_B_EV_PER_T,
+        0.0, 0.0, 2.0, QSS_MU_B_EV_PER_T,
         opts,
         -10.0, 10.0, 0.0
     );
@@ -180,7 +185,7 @@ TEST(ChemicalPotential, SimulatedAnnealingSolver) {
         n_target,
         (double)N,
         E,
-        0.0, 2.0, QSS_MU_B_EV_PER_T,
+        0.0, 0.0, 2.0, QSS_MU_B_EV_PER_T,
         opts,
         -5.0, 5.0,
         2.0 // Start away from 0
@@ -213,7 +218,7 @@ TEST(ChemicalPotential, FallbackScanPath) {
         n_target,
         (double)N,
         E,
-        0.0, 2.0, QSS_MU_B_EV_PER_T,
+        0.0, 0.0, 2.0, QSS_MU_B_EV_PER_T,
         opts,
         -5.0, 5.0, 0.0
     );

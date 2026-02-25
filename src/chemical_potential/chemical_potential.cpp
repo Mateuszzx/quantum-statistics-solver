@@ -55,6 +55,7 @@ namespace
         const double N,
         const Mat &E,
         double delta,
+        double U,
         const CombinedSolverOptions &opts,
         double a0 = -5.0,
         double b0 = 5.0,
@@ -66,7 +67,7 @@ namespace
             throw std::invalid_argument("chemical_potential_B: kx/ky vs E shape mismatch");
 
         auto f = [&](double mu) {
-            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, beta, dist, delta)) - n_assumed;
+            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, beta, dist, U, delta)) - n_assumed;
         };
 
         qss::OptimizationSolver solver(opts);
@@ -125,6 +126,7 @@ ChemicalPotentialResult chemical_potential_B(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,
@@ -134,10 +136,10 @@ ChemicalPotentialResult chemical_potential_B(
 {
     const double delta = 0.5 * g * muB_eV_per_T * H_a_T;
     ChemicalPotentialResult R = solve_mu(
-        dist, beta, n_assumed, N, E, delta, solver_opts, a0, b0, x0);
+        dist, beta, n_assumed, N, E, delta, U, solver_opts, a0, b0, x0);
 
     if (std::isfinite(R.mu)) {
-        const auto F = qss::chem::distribution_total(E, R.mu, beta, dist, delta);
+        const auto F = qss::chem::distribution_total(E, R.mu, beta, dist, U, delta);
         R.error = std::abs(qss::math::mean_abs_2d(F) - n_assumed);
     }
     return R;
@@ -151,6 +153,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,
@@ -162,7 +165,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
     out.reserve(betas.size());
     for (double b : betas) {
         out.push_back(chemical_potential_B(
-            dist, b, n_assumed, N, E, H_a_T, g, muB_eV_per_T,
+            dist, b, n_assumed, N, E, H_a_T, U, g, muB_eV_per_T,
             solver_opts, a0, b0, x0));
     }
     return out;
@@ -176,6 +179,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
     const double N,
     const Mat &E,
     double H_a_T,
+    double U,
     double g,
     double muB_eV_per_T,
     const CombinedSolverOptions &solver_opts,
@@ -193,6 +197,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
             N,
             E,
             H_a_T,
+            U,
             g,
             muB_eV_per_T,
             solver_opts,

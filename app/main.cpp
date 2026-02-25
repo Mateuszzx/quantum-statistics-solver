@@ -126,6 +126,7 @@ int main()
                 static_cast<double>(N),
                 E,
                 H_a_T,
+                0.0, // U (not used for these distros)
                 g,
                 muB,
                 opts,
