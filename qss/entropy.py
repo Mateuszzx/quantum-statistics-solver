@@ -116,6 +116,7 @@ def entropy(
     E: np.ndarray,
     g: float = 2.0,
     muB_eV_per_T: float = 1.0,
+    U: float = 0.0,
 ) -> pd.DataFrame:
     """
     Compute average entropy for each state in the chemical potential DataFrame.
@@ -166,7 +167,7 @@ def entropy(
         if H_a == 0:
             # Spin degenerate case
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_single = distribution(E, mu, beta, 0.0, 0, distro_str)
+            n_single = distribution(E, mu, beta, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
 
             # Total entropy
             s_k = calculate_entropy_k(n_single, n_single, distro_str)
@@ -175,12 +176,11 @@ def entropy(
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
 
-            E_up = E - delta
-            E_down = E + delta
-
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_up = distribution(E_up, mu, beta, 0.0, 1, distro_str)
-            n_down = distribution(E_down, mu, beta, 0.0, -1, distro_str)
+            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_down = distribution(
+                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+            )
 
             # Total entropy
             s_k = calculate_entropy_k(n_up, n_down, distro_str)

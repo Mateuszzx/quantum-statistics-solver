@@ -17,6 +17,7 @@ def calculate_magnetization(
     E: np.ndarray,
     g: float = 2.0,
     muB_eV_per_T: float = 1.0,
+    U: float = 0.0,
 ) -> pd.DataFrame:
     """
     Compute average energy for each state in the chemical potential DataFrame.
@@ -37,7 +38,7 @@ def calculate_magnetization(
     Returns
     -------
     pd.DataFrame
-        Original DataFrame with a new 'energy' column.
+        Original DataFrame with a new 'magnetization' column.
     """
     # Ensure E is numpy array
     E = np.asarray(E)
@@ -71,8 +72,10 @@ def calculate_magnetization(
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
 
-            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str)
-            n_down = distribution(E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str)
+            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_down = distribution(
+                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+            )
             mag = magnetization_single(n_up, n_down)
 
         magnetization.append(mag)

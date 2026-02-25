@@ -16,6 +16,7 @@ def energy(
     E: np.ndarray,
     g: float = 2.0,
     muB_eV_per_T: float = 1.0,
+    U: float = 0.0,
 ) -> pd.DataFrame:
     """
     Compute average energy for each state in the chemical potential DataFrame.
@@ -32,6 +33,8 @@ def energy(
         Landé g-factor.
     muB_eV_per_T : float
         Bohr magneton in eV/T.
+    U : float
+        On-site interaction energy.
 
     Returns
     -------
@@ -71,7 +74,7 @@ def energy(
         if H_a == 0:
             # Spin degenerate case
             # distribution) returns total occupancy (factor of 2 included for FD)
-            n_vals = distribution(E, mu, beta, 0.0, 0, distro_str) * 2.0
+            n_vals = distribution(E, mu, beta, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
             avg_energy = np.mean(E * n_vals)
         else:
             # Zeeman split case
@@ -82,8 +85,10 @@ def energy(
 
             # distribution() returns 0..2 (for FD).
             # Physical occupancy per spin channel is distribution()/2.
-            n_up = distribution(E_up, mu, beta, 0.0, 1, distro_str)
-            n_down = distribution(E_down, mu, beta, 0.0, -1, distro_str)
+            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_down = distribution(
+                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+            )
             avg_energy = np.mean(E_up * n_up + E_down * n_down)
 
         energies.append(avg_energy)
