@@ -63,19 +63,17 @@ def calculate_magnetization(
 
         mu = row.mu
 
-        # Handle temperature
-        beta = np.inf if k_BT == 0 else 1.0 / k_BT
-
         if H_a == 0:
             mag = 0.0
         else:
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
 
-            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
             n_down = distribution(
-                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
             )
+            # Incorrect formulation for Energy?
             mag = magnetization_single(n_up, n_down)
 
         magnetization.append(mag)

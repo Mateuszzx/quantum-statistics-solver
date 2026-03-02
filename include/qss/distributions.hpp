@@ -35,14 +35,14 @@ enum class DistType
  *
  * @param e_k Energy of the state.
  * @param mu Chemical potential.
- * @param beta Inverse temperature (1/kT).
+ * @param kBT Temperature in energy units (k_B * T).
  * @param delta Zeeman shift.
  * @param dist Distribution type.
  * @return std::optional<double> Distribution value, or std::nullopt if dist is invalid.
  */
 std::optional<double> distribution(double e_k,
                                    double mu,
-                                   double beta,
+                                   double kBT,
                                    double delta,
                                    int spin_shift,
                                    double U,
@@ -54,14 +54,14 @@ std::optional<double> distribution(double e_k,
  *
  * @param e_k Vector of energy states.
  * @param mu Chemical potential.
- * @param beta Inverse temperature (1/kT).
+ * @param kBT Temperature in energy units (k_B * T).
  * @param delta Zeeman shift.
  * @param dist Distribution type.
  * @return std::optional<Vec> Vector of distribution values, or std::nullopt if dist is invalid.
  */
 std::optional<Vec> distribution(const Vec &e_k,
                                 double mu,
-                                double beta,
+                                double kBT,
                                 double delta,
                                 int spin_shift,
                                 double U,
@@ -73,14 +73,14 @@ std::optional<Vec> distribution(const Vec &e_k,
  *
  * @param e_k Matrix of energy states.
  * @param mu Chemical potential.
- * @param beta Inverse temperature (1/kT).
+ * @param kBT Temperature in energy units (k_B * T).
  * @param delta Zeeman shift.
  * @param dist Distribution type.
  * @return std::optional<Mat> Matrix of distribution values, or std::nullopt if dist is invalid.
  */
 std::optional<Mat> distribution(const Mat &e_k,
                                 double mu,
-                                double beta,
+                                double kBT,
                                 double delta,
                                 int spin_shift,
                                 double U,
@@ -98,36 +98,36 @@ namespace qss::detail
  * @brief Compute Fermi-Dirac distribution for a single state.
  * @internal
  */
-double fd_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+double fd_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Fermi-Liquid-Like distribution for a single state.
  * @internal
  */
-double flb_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+double flb_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Non-Fermi-Liquid distribution for a single state.
  * @internal
  */
-double nfl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+double nfl_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Non-Fermi-Liquid with Boltzmann distribution for a single state.
  * @internal
  */
-double nflb_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+double nflb_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Spin-Split Liquid for a single state.
  * @internal
  */
-double ssl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept;
+double ssl_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Hubbard distribution for a single state.
  * @internal
  */
-double hubbard_distribution(double e_k, double mu, double beta, double delta, int spin_shift, double U, bool n_kd) noexcept;
+double hubbard_distribution(double e_k, double mu, double kBT, double delta, int spin_shift, double U, bool n_kd) noexcept;
 
 } // namespace qss::detail

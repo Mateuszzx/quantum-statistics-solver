@@ -36,14 +36,14 @@ class TestChemicalPotential:
 
         E = np.zeros((2, 2))
         n_vals = [0.4, 0.6]
-        beta_vals = [1.0]
+        kBT_vals = [1.0]
         H_a_vals = [0.0]
         distros = ["FD"]
 
         df = chemical_potential(
             distros=distros,
             n_vals=n_vals,
-            beta_vals=beta_vals,
+            kBT_vals=kBT_vals,
             H_a_vals=H_a_vals,
             E=E
         )
@@ -73,14 +73,14 @@ class TestChemicalPotential:
 
         E = np.zeros((2, 2))
         n_vals = [0.5]
-        beta_vals = [1.0, 2.0]
+        kBT_vals = [1.0, 2.0]
         H_a_vals = [0.0]
         distros = ["FD", "FLB"]
 
         df = chemical_potential(
             distros=distros,
             n_vals=n_vals,
-            beta_vals=beta_vals,
+            kBT_vals=kBT_vals,
             H_a_vals=H_a_vals,
             E=E
         )
@@ -101,7 +101,7 @@ class TestChemicalPotential:
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
-            beta_vals=[1.0],
+            kBT_vals=[1.0],
             H_a_vals=[0.0],
             E=E,
             solver_opts=opts
@@ -122,7 +122,7 @@ class TestChemicalPotential:
         df = chemical_potential(
             distros="FD", # Single string instead of list
             n_vals=[0.5],
-            beta_vals=[1.0],
+            kBT_vals=[1.0],
             H_a_vals=[0.0],
             E=E
         )
@@ -138,7 +138,7 @@ class TestChemicalPotential:
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
-            beta_vals=[1.0],
+            kBT_vals=[1.0],
             H_a_vals=[0.0],
             E=E,
             N=100 # Custom system size
@@ -154,7 +154,7 @@ class TestChemicalPotential:
             chemical_potential(
                 distros=[123], # Invalid type
                 n_vals=[0.5],
-                beta_vals=[1.0],
+                kBT_vals=[1.0],
                 H_a_vals=[0.0],
                 E=E
             )
@@ -180,7 +180,7 @@ class TestChemicalPotential:
         chemical_potential(
             distros="FD",
             n_vals=[0.5],
-            beta_vals=[1.0],
+            kBT_vals=[1.0],
             H_a_vals=[0.0],
             E=E,
             solver_opts=native_opts

@@ -133,7 +133,7 @@ class ScientificPlotter:
             spine.set_color('black')
 
 
-    def _calculate_mu(self, e_k: np.ndarray, distro: str, n: float, beta: float, H: float, g: float, mu_B: float, N: Optional[int] = None) -> float:
+    def _calculate_mu(self, e_k: np.ndarray, distro: str, n: float, kBT: float, H: float, g: float, mu_B: float, N: Optional[int] = None) -> float:
         _solver_options = (so.brent_defaults(abs_tol=1e-9,
                         rel_tol=1e-6,
                         expand_factor=1.4,
@@ -144,7 +144,7 @@ class ScientificPlotter:
         df_mu = chemical_potential(
             distros=[distro],
             n_vals=[n],
-            beta_vals=[beta],
+            kBT_vals=[kBT],
             H_a_vals=[H],
             E=e_k,
             N=N,
@@ -223,7 +223,7 @@ class ScientificPlotter:
                                     dim: int = 2,
                                     kx: Optional[np.ndarray] = None,
                                     n: Union[float, np.ndarray] = 0.9,
-                                    betas: Union[float, np.ndarray] = 1000,
+                                    kBTs: Union[float, np.ndarray] = 0.001,
                                     H: float = 0.0, g: float = 2.0, mu_B: float = 1,
                                     distributions: List[str] = ["FD", "FLB", "NFL"],
                                     figsize: Tuple[int, int] = (15, 5),
@@ -242,15 +242,15 @@ class ScientificPlotter:
 
         # Normalize inputs to arrays
         n_arr = np.array([n]) if np.isscalar(n) else np.array(n)
-        betas_arr = np.array([betas]) if np.isscalar(betas) else np.array(betas)
+        kBTs_arr = np.array([kBTs]) if np.isscalar(kBTs) else np.array(kBTs)
 
         n_num = len(n_arr)
-        num_betas = len(betas_arr)
+        num_kBTs = len(kBTs_arr)
         is_H_zero = np.isclose(H, 0.0)
 
         total_rows =  n_num * (1 if is_H_zero else 2)
 
-        fig, ax = plt.subplots(nrows=num_betas, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
+        fig, ax = plt.subplots(nrows=num_kBTs, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
         ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
         delta = H * 0.5 * g * mu_B
@@ -272,15 +272,15 @@ class ScientificPlotter:
             raise ValueError(f"Unknown slice_type: {slice_type}")
 
         plot_idx = 0
-        for beta in betas_arr:
+        for kBT in kBTs_arr:
             for n_val in n_arr:
                 # Prepare data for this configuration
                 data_per_distro = {}
                 for distro in distributions:
-                    mu = self._calculate_mu(e_k, distro, n_val, beta, H, g, mu_B, N)
+                    mu = self._calculate_mu(e_k, distro, n_val, kBT, H, g, mu_B, N)
 
-                    n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd = n_kd)
-                    n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd = n_kd)
+                    n_k_plus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd = n_kd)
+                    n_k_minus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd = n_kd)
 
                     if distro in ["NFL", "NFLB", "SSL"]:
                         n_k_plus = np.clip(n_k_plus, 0, 1.0)
@@ -289,7 +289,7 @@ class ScientificPlotter:
                     data_per_distro[distro] = (n_k_plus, n_k_minus)
 
                 # Plotting
-                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {1/beta:.1e}$\n$\\mu H / |t| = {H}$\n$U = {U}$"
+                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$\n$\\mu H / |t| = {H}$\n$U = {U}$"
 
                 if is_H_zero:
                     current_ax = ax[plot_idx]
@@ -345,7 +345,7 @@ class ScientificPlotter:
                                     kx: Optional[np.ndarray] = None,
                                     ky: Optional[np.ndarray] = None,
                                     n: float = 0.8,
-                                    beta: float = 1000,
+                                    kBT: float = 0.001,
                                     H: float = 0.0, g: float = 2.0, mu_B: float = 1,
                                     distributions: List[str] = ["FD", "FLB", "NFL"],
                                     figsize: Tuple[int, int] = (14, 6),
@@ -373,9 +373,9 @@ class ScientificPlotter:
         if not np.isclose(H, 0.0) and len(distributions) == 1:
             # Spin split plot for single distribution
             distro = distributions[0]
-            mu = self._calculate_mu(e_k, distro, n, beta, H, g, mu_B, N)
-            n_k_plus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd)
-            n_k_minus = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
+            mu = self._calculate_mu(e_k, distro, n, kBT, H, g, mu_B, N)
+            n_k_plus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd)
+            n_k_minus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
 
             fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=figsize, sharey=True)
 
@@ -396,7 +396,7 @@ class ScientificPlotter:
             cbar = fig.colorbar(im2, ax=[ax1, ax2], label='spin occupancy', fraction=0.046, pad=0.04)
             cbar.ax.tick_params(labelsize=self.config.fontsize)
 
-            title = f"Distribution: {distro}, $n = {n:.3f}$, $k_B T/|t| = {1/beta:.2f}$, $t'/|t| = {t_prim}$"
+            title = f"Distribution: {distro}, $n = {n:.3f}$, $k_B T/|t| = {kBT:.2f}$, $t'/|t| = {t_prim}$"
             fig.suptitle(title, fontsize=self.config.fontsize+2)
 
         else:
@@ -408,10 +408,10 @@ class ScientificPlotter:
             vmax_vals = [2, 2, 1] # Heuristic from original code
 
             for i, distro in enumerate(distributions):
-                mu = self._calculate_mu(e_k, distro, n, beta, H, g, mu_B, N)
+                mu = self._calculate_mu(e_k, distro, n, kBT, H, g, mu_B, N)
                 # Summing spins if H=0 or just total occupancy
-                n_k = dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd) + \
-                      dist.distribution(e_k, mu=mu, beta=beta, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
+                n_k = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd=n_kd) + \
+                      dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd=n_kd)
 
                 vm = vmax_vals[i] if i < len(vmax_vals) else 1.0
                 cf = ax[i].imshow(n_k, extent=extent, origin='lower', aspect='auto', cmap=self.config.cmap, vmin=0, vmax=vm)
@@ -427,7 +427,7 @@ class ScientificPlotter:
                 plt.colorbar(cf, ax=ax[i])
 
             title = f"Statistical Distribution: $N = {N} \\times {N}$, $n = {n:.2f}$,\n" + \
-                    f"$ t = -1$, $t' / |t| = {t_prim}$," + f" $\\frac{{k_BT}}{{|t|}} = {1/beta:.2f}$"
+                    f"$ t = -1$, $t' / |t| = {t_prim}$," + f" $\\frac{{k_BT}}{{|t|}} = {kBT:.2f}$"
             fig.suptitle(title, fontsize=16)
             plt.tight_layout()
 
@@ -435,9 +435,9 @@ class ScientificPlotter:
                            x_param: str, # "n", "k_BT", "H_a"
                            y_col: str,
                            y_label: str,
-                           fixed_params: Dict[str, Union[float, int]], # e.g. {"beta": 100, "H_a": 0}
+                           fixed_params: Dict[str, Union[float, int]], # e.g. {"kBT": 0.01, "H_a": 0}
                            distros: List[str],
-                           subplots_param: Optional[str] = None, # Parameter to create subplots for (e.g. "n" or "beta")
+                           subplots_param: Optional[str] = None, # Parameter to create subplots for (e.g. "n" or "kBT")
                            subplots_vals: Optional[List[float]] = None,
                            cols: int = 5,
                            figsize: Tuple[int, int] = (12, 6),
@@ -470,10 +470,9 @@ class ScientificPlotter:
 
             # Extract needed params for text label
             n_val = current_params.get("n", "var")
-            beta_val = current_params.get("beta", "var")
+            kBT_val = current_params.get("kBT", "var")
             H_val = current_params.get("H_a", 0.0)
-            k_BT_val = 1.0/beta_val if isinstance(beta_val, (int, float)) else "var"
-
+            
             for distro in distros:
                 try:
                     # Filter logic depends on index structure. Assuming MultiIndex (distro, n, k_BT, H_a)
@@ -485,7 +484,7 @@ class ScientificPlotter:
                     # Create a slicer dictionary
                     slicer = {"distro": distro}
                     if "n" in current_params: slicer["n"] = current_params["n"]
-                    if "beta" in current_params: slicer["k_BT"] = 1.0/current_params["beta"]
+                    if "kBT" in current_params: slicer["k_BT"] = current_params["kBT"]
                     if "H_a" in current_params: slicer["H_a"] = current_params["H_a"]
 
                     # We need to handle floating point matching for index
@@ -512,7 +511,7 @@ class ScientificPlotter:
             # Text label
             text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$U = {U}$"
             if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
-            if isinstance(k_BT_val, (int, float)): text += f"\n$k_B T/|t| = {k_BT_val:.2e}$"
+            if isinstance(kBT_val, (int, float)): text += f"\n$k_B T/|t| = {kBT_val:.2e}$"
             if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
 
             xlabel_map = {

@@ -33,9 +33,9 @@ inline double flb_from_x(double x) noexcept
 }
 } // namespace
 
-double flb_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept
+double flb_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept
 {
-    return flb_from_x(beta * (e_k + (spin_shift * delta) - mu));
+    return flb_from_x((e_k + (spin_shift * delta) - mu) / kBT);
 }
 
 

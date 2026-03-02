@@ -28,7 +28,7 @@ struct ChemicalPotentialResult
  * Solves for mu such that the total particle density equals n_assumed.
  *
  * @param dist Distribution type (FD, FLB, NFLB, etc.).
- * @param beta Inverse temperature (1/k_B T).
+ * @param kBT Temperature in energy units (k_B * T).
  * @param n_assumed Target particle density (filling factor).
  * @param N Linear size of the lattice (used for validation).
  * @param E Energy dispersion matrix (2D).
@@ -44,7 +44,7 @@ struct ChemicalPotentialResult
  */
 ChemicalPotentialResult chemical_potential_B(
     DistType dist,
-    double beta,
+    double kBT,
     double n_assumed,
     const double N,
     const Mat &E,
@@ -59,10 +59,10 @@ ChemicalPotentialResult chemical_potential_B(
 
 
 /**
- * @brief Calculate chemical potential for a vector of inverse temperatures (betas).
+ * @brief Calculate chemical potential for a vector of temperatures (kBTs).
  *
  * @param dist Distribution type.
- * @param betas Vector of inverse temperatures.
+ * @param kBTs Vector of temperatures.
  * @param n_assumed Target particle density.
  * @param N Linear size of the lattice.
  * @param E Energy dispersion matrix.
@@ -74,11 +74,11 @@ ChemicalPotentialResult chemical_potential_B(
  * @param a0 Lower bound.
  * @param b0 Upper bound.
  * @param x0 Initial guess.
- * @return std::vector<ChemicalPotentialResult> Vector of results corresponding to betas.
+ * @return std::vector<ChemicalPotentialResult> Vector of results corresponding to kBTs.
  */
-std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
+std::vector<ChemicalPotentialResult> chemical_potential_B_multi_kBT(
     DistType dist,
-    const Vec &betas,
+    const Vec &kBTs,
     double n_assumed,
     const double N,
     const Mat &E,
@@ -95,7 +95,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
  * @brief Calculate chemical potential for a vector of target densities (n).
  *
  * @param dist Distribution type.
- * @param beta Inverse temperature.
+ * @param kBT Temperature in energy units.
  * @param n_assumed_values Vector of target particle densities.
  * @param N Linear size of the lattice.
  * @param E Energy dispersion matrix.
@@ -111,7 +111,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
  */
 std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
     DistType dist,
-    double beta,
+    double kBT,
     const Vec &n_assumed_values,
     const double N,
     const Mat &E,

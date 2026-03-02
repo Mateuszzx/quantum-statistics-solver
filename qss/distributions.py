@@ -111,11 +111,11 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
 def distribution(  # noqa: PLR0913
     e_k: np.ndarray,
     mu: float,
-    beta: float,
+    kBT: float,
     delta: float,
     spin_shift: int,
-    U: float,
     dist_type: str | DistType,
+    U: float = 0.0,
     n_kd: bool = False,
 ) -> np.ndarray:
     """
@@ -127,14 +127,18 @@ def distribution(  # noqa: PLR0913
         Energy values (can be 1D or 2D array)
     mu : float
         Chemical potential
-    beta : float
-        Inverse temperature (1/kT)
+    kBT : float
+        Temperature in energy units (k_B * T)
     delta : float
         Zeeman shift
     spin_shift : int
         Spin shift (+1 or -1)
     dist_type : str or DistType
         Distribution type: 'FD', 'FLB', 'NFLB' or DistType enum value
+    U : float, optional
+        Hubbard U parameter (default: 0.0)
+    n_kd : bool, optional
+        If True, calculate double occupancy (Hubbard only). Default: False.
 
     Returns
     -------
@@ -153,13 +157,13 @@ def distribution(  # noqa: PLR0913
     >>> import numpy as np
     >>> from qss.distributions import distribution, DistType
     >>> energies = np.linspace(-2, 2, 100)
-    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, delta=0.0, spin_shift=1, dist_type='FD')
+    >>> fd_dist = distribution(energies, mu=0.0, kBT=2.0, delta=0.0, spin_shift=1, dist_type='FD')
     >>> # or using enum
-    >>> fd_dist = distribution(energies, mu=0.0, beta=2.0, delta=0.0, spin_shift=1, dist_type=DistType.FD)
+    >>> fd_dist = distribution(energies, mu=0.0, kBT=2.0, delta=0.0, spin_shift=1, dist_type=DistType.FD)
     >>>
     >>> # 2D example
     >>> energies_2d = np.random.randn(10, 20)
-    >>> flb_dist = distribution(energies_2d, mu=0.5, beta=1.5, delta=0.1, spin_shift=1, dist_type=DistType.FLB)
+    >>> flb_dist = distribution(energies_2d, mu=0.5, kBT=1.5, delta=0.1, spin_shift=1, dist_type=DistType.FLB)
     """
     e_k = np.asarray(e_k, dtype=np.float64)
     cpp_dist_type = _get_cpp_dist_type(dist_type)
@@ -167,12 +171,12 @@ def distribution(  # noqa: PLR0913
     if e_k.ndim == 1:
         return cast(
             NDArray[np.floating],
-            _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, U, e_k, n_kd),
+            _qss.distribution(cpp_dist_type, mu, kBT, delta, spin_shift, U, e_k, n_kd),
         )
     if e_k.ndim == 2:
         return cast(
             NDArray[np.floating],
-            _qss.distribution(cpp_dist_type, mu, beta, delta, spin_shift, U, e_k, n_kd),
+            _qss.distribution(cpp_dist_type, mu, kBT, delta, spin_shift, U, e_k, n_kd),
         )
     raise ValueError(f"e_k must be 1D or 2D array, got shape {e_k.shape}")
 

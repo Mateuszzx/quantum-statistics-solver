@@ -36,7 +36,7 @@ def _dist_label(d: _qss.DistType | PyDistType | str) -> str:
 def chemical_potential(  # noqa: PLR0913, PLR0912
     distros: Sequence[PyDistType | _qss.DistType | str],
     n_vals: Sequence[float],
-    beta_vals: Sequence[float],
+    kBT_vals: Sequence[float],
     H_a_vals: Sequence[float],
     E: np.ndarray,
     U: float = 0.0,
@@ -57,8 +57,8 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
         FD, FLB, NFLB, or ND (as string, enum, or native type)
     n_vals : sequence of float
         Band filling values
-    beta_vals : sequence of float
-        Inverse temperature values (1/k_B T)
+    kBT_vals : sequence of float
+        Temperature values in energy units (k_B * T)
     H_a_vals : sequence of float
         Applied magnetic field values (Tesla)
     E : ndarray
@@ -80,7 +80,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     -------
     pd.DataFrame
         MultiIndex DataFrame with columns: mu, iterations, converged, residual
-        Index levels: distro, n, beta, H_a
+        Index levels: distro, n, kBT, H_a
     """
     if isinstance(distros, (str, _qss.DistType, PyDistType)):
         distro_iter = [distros]
@@ -121,14 +121,14 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     # Loop over all parameter combinations
     for distro in distro_iter:
         native_dist = _coerce_native_distro(distro)
-        for beta_val in beta_vals:
-            beta_f = float(beta_val)
+        for kBT_val in kBT_vals:
+            kBT_f = float(kBT_val)
             for h_val in H_a_vals:
                 h_f = float(h_val)
                 # Call vectorized backend (loops over n internally)
                 results = _qss.chemical_potential_B_multi_n(
                     native_dist,
-                    beta_f,
+                    kBT_f,
                     n_vals,
                     N_eff,
                     E,
@@ -150,7 +150,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
                             "residual": float(err),
                         }
                     )
-                    index_keys.append((_dist_label(distro), n_val, 1 / beta_val, h_val))
+                    index_keys.append((_dist_label(distro), n_val, kBT_val, h_val))
 
     idx = pd.MultiIndex.from_tuples(index_keys, names=["distro", "n", "k_BT", "H_a"])
     return pd.DataFrame.from_records(records, index=idx)

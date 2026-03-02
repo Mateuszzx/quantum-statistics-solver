@@ -36,9 +36,9 @@ inline double ssl_from_x(double x, double x_prim) noexcept
 }
 } // namespace
 
-double ssl_distribution(double e_k, double mu, double beta, double delta, int spin_shift) noexcept
+double ssl_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept
 {
-    return ssl_from_x(beta * (e_k + (spin_shift * delta) - mu), beta * (e_k - (spin_shift * delta) - mu));
+    return ssl_from_x((e_k + (spin_shift * delta) - mu) / kBT, (e_k - (spin_shift * delta) - mu) / kBT);
 }
 
 } // namespace qss::detail

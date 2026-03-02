@@ -77,15 +77,14 @@ TEST(Distributions, FD_Scalar_MonotonicInEnergy)
     EXPECT_GT(v_low, v_high);
 }
 
-TEST(Distributions, FD_BetaZero_LimitsToHalfSpin)
+TEST(Distributions, FD_HighTemp_LimitsToHalfSpin)
 {
     const double mu = 0.0;
-    const double beta =
-        0.0; // beta -> 0 => x = 0, logistic = 1/2, spin=2 -> value = 1.0
+    const double kBT = 1.0e9; // Very high temperature (beta -> 0)
     const double ek = 123.456;
 
-    const double v = *qss::distribution(ek, mu, beta, 0.0, 0, 0.0, DistType::FD);
-    EXPECT_NEAR(v, 0.5, 1e-12); // half-occupancy with spin=2
+    const double v = *qss::distribution(ek, mu, kBT, 0.0, 0, 0.0, DistType::FD);
+    EXPECT_NEAR(v, 0.5, 1e-6); // half-occupancy with spin=2
 }
 
 TEST(Distributions, FD_Vector_Equals_ElementwiseScalar)
@@ -260,7 +259,7 @@ TEST(Distributions, SSL_Scalar_Limits)
 TEST(Distributions, SSL_Scalar_Zeeman)
 {
     const double mu = 0.0;
-    const double beta = 100.0; // Low temp
+    const double kBT = 0.01; // Low temp (beta = 100)
     const double delta = 0.5;
     const double ek = 0.0;
     // E = 0.
@@ -269,7 +268,7 @@ TEST(Distributions, SSL_Scalar_Zeeman)
 
     // Spin up
     {
-        auto opt = qss::distribution(ek, mu, beta, delta, 1, 0.0, DistType::SSL);
+        auto opt = qss::distribution(ek, mu, kBT, delta, 1, 0.0, DistType::SSL);
         ASSERT_TRUE(opt.has_value());
         // x = 100 * 0.5 = 50. Large positive. f -> 0.
         EXPECT_NEAR(*opt, 0.0, 1e-3);
@@ -277,7 +276,7 @@ TEST(Distributions, SSL_Scalar_Zeeman)
 
     // Spin down
     {
-        auto opt = qss::distribution(ek, mu, beta, delta, -1, 0.0, DistType::SSL);
+        auto opt = qss::distribution(ek, mu, kBT, delta, -1, 0.0, DistType::SSL);
         ASSERT_TRUE(opt.has_value());
         // x = 100 * (-0.5) = -50.
         // x' = 100 * (0.5) = 50.

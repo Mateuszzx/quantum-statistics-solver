@@ -15,7 +15,7 @@ namespace qss::chem {
  *
  * @param E Energy grid 2D (ny rows x nx columns).
  * @param mu Chemical potential.
- * @param beta Inverse temperature.
+ * @param kBT Temperature in energy units.
  * @param dist Distribution type (FD/FLB/NFLB/...).
  * @param U double filling parameter
  * @param delta Zeeman shift (g*muB*H/2) in energy units.
@@ -26,7 +26,7 @@ namespace qss::chem {
  * - For delta != 0: Spin splitting -> F = f(E - delta) + f(E + delta)
  *   (summing up and down channels point-by-point)
  */
-inline Mat distribution_total(const Mat& E, double mu, double beta,
+inline Mat distribution_total(const Mat& E, double mu, double kBT,
                             DistType dist, double U, double delta) {
     // Dimensions of the energy matrix
     const std::size_t ny = E.size();
@@ -43,15 +43,15 @@ inline Mat distribution_total(const Mat& E, double mu, double beta,
     double result;
     for (std::size_t j = 0; j < ny; ++j) {
 
-        auto spin_up = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist);
-        auto spin_dn = qss::distribution(E[j], mu, beta, delta, static_cast<int>(SPIN_DN_SHIFT), U, dist);
+        auto spin_up = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist);
+        auto spin_dn = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_DN_SHIFT), U, dist);
         if (!spin_up || !spin_dn)
             throw std::runtime_error("distribution() failed");
 
         // No splitting: copy f(E) results to output
         for (std::size_t i = 0; i < nx; ++i) {
             result = std::clamp((*spin_up)[i], 0.0, 1.0) + std::clamp((*spin_dn)[i], 0.0, 1.0);
-            if (dist == DistType::FD  || dist == DistType::FLB)
+            if (dist == DistType::FD  || dist == DistType::FLB || dist == DistType::HUBBARD)
             {
                 out[j][i] = result;
             }

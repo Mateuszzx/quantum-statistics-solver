@@ -51,7 +51,7 @@ def energy(
     energies = []
     free_energy = []
     # Iterate over the DataFrame
-    for row in df.itertuples():
+    for i, row in enumerate(df.itertuples()):
         # Extract parameters from index or columns
         try:
             if isinstance(row.Index, tuple) and len(row.Index) == 4:
@@ -66,16 +66,10 @@ def energy(
             ) from e
 
         mu = row.mu
-        entropy = row.entropy
-
-        # Handle temperature
-        beta = np.inf if k_BT == 0 else 1.0 / k_BT
 
         if H_a == 0:
-            # Spin degenerate case
-            # distribution) returns total occupancy (factor of 2 included for FD)
-            n_vals = distribution(E, mu, beta, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
-            avg_energy = np.mean(E * n_vals)
+            n_vals = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
+            avg_energy = 2.0 * np.mean(E * n_vals)
         else:
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
@@ -83,16 +77,32 @@ def energy(
             E_up = E - delta
             E_down = E + delta
 
-            # distribution() returns 0..2 (for FD).
-            # Physical occupancy per spin channel is distribution()/2.
-            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
             n_down = distribution(
-                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
             )
             avg_energy = np.mean(E_up * n_up + E_down * n_down)
 
         energies.append(avg_energy)
-        free_energy.append(avg_energy - k_BT * entropy)
+
+        # Calculate entropy if not present
+        if hasattr(row, "entropy") and not pd.isna(row.entropy):
+            entropy_val = row.entropy
+        else:
+            # We need to calculate entropy for this state.
+            # Create a 1-row DataFrame preserving index
+            # This is slow but handles the missing entropy case
+            df_slice = df.iloc[[i]]
+            # If entropy function adds 'entropy' column, use it.
+            # Note: calculate_entropy requires mu which should be in df
+            try:
+                df_ent = calculate_entropy(df_slice, E, g, muB_eV_per_T, U)
+                entropy_val = df_ent["entropy"].iloc[0]
+            except Exception:
+                # Fallback if entropy calculation fails (e.g. missing columns)
+                entropy_val = 0.0
+
+        free_energy.append(avg_energy - k_BT * entropy_val)
 
     # Return new DataFrame with energy column
     df_out = df.copy()

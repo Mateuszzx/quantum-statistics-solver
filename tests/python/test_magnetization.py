@@ -113,4 +113,4 @@ class TestCalculateMagnetization:
             args, _ = mock_dist.call_args
             # args: E, mu, beta, ...
             beta = args[2]
-            assert beta == np.inf
+            assert beta == 0.0

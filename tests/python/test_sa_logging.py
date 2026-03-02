@@ -30,7 +30,7 @@ def test_sa_logging():
             chemical_potential(
                 distros=[DistType.FD],
                 n_vals=[0.5],
-                beta_vals=[1.0],
+                kBT_vals=[1.0],
                 H_a_vals=[0.0],
                 N=N,
                 E=E,

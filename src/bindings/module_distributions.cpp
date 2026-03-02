@@ -45,13 +45,13 @@ void bind_distributions(nb::module_ &m)
     // Scalar variant: returns float | None
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, double U, double e_k, bool n_kd = false)
+        [](qss::DistType dist, double mu, double kBT, double delta, int spin_shift, double U, double e_k, bool n_kd = false)
             -> std::optional<double> {
-            return qss::distribution(e_k, mu, beta, delta, spin_shift, U, dist, n_kd);
+            return qss::distribution(e_k, mu, kBT, delta, spin_shift, U, dist, n_kd);
         },
         "dist",
         "mu",
-        "beta",
+        "kBT",
         "delta",
         "spin_shift",
         "U",
@@ -62,7 +62,7 @@ void bind_distributions(nb::module_ &m)
     // Vector variant: returns 1-D numpy.ndarray[float64]
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, double U, Vec1 E, bool n_kd = false) -> Out1D {
+        [](qss::DistType dist, double mu, double kBT, double delta, int spin_shift, double U, Vec1 E, bool n_kd = false) -> Out1D {
             const size_t n = (size_t)E.shape(0);
             if (n == 0)
                 return make_out_1d(0);
@@ -70,7 +70,7 @@ void bind_distributions(nb::module_ &m)
             qss::Vec Ev(n);
             std::memcpy(Ev.data(), E.data(), n * sizeof(double));
 
-            auto res = qss::distribution(Ev, mu, beta, delta, spin_shift, U, dist, n_kd);
+            auto res = qss::distribution(Ev, mu, kBT, delta, spin_shift, U, dist, n_kd);
             if (!res)
                 throw std::runtime_error("distribution: invalid DistType");
 
@@ -80,17 +80,17 @@ void bind_distributions(nb::module_ &m)
         },
         "dist",
         "mu",
-        "beta",
+        "kBT",
         "delta",
         "spin_shift",
         "U",
-        "e_k",
+        "E",
         "n_kd",
         "Vectorized distribution over a 1-D energy array E.");
 
     m.def(
         "distribution",
-        [](qss::DistType dist, double mu, double beta, double delta, int spin_shift, double U, Mat2In E, bool n_kd = false) -> Mat2Out {
+        [](qss::DistType dist, double mu, double kBT, double delta, int spin_shift, double U, Mat2In E, bool n_kd = false) -> Mat2Out {
             const size_t rows = E.shape(0);
             const size_t cols = E.shape(1);
 
@@ -104,7 +104,7 @@ void bind_distributions(nb::module_ &m)
             }
 
             // Call C++ implementation
-            auto res = qss::distribution(mat_in, mu, beta, delta, spin_shift, U, dist, n_kd);
+            auto res = qss::distribution(mat_in, mu, kBT, delta, spin_shift, U, dist, n_kd);
             if (!res)
                 throw std::runtime_error("distribution: invalid DistType");
 
@@ -120,7 +120,7 @@ void bind_distributions(nb::module_ &m)
         },
         nb::arg("dist"),
         nb::arg("mu"),
-        nb::arg("beta"),
+        nb::arg("kBT"),
         nb::arg("delta"),
         nb::arg("spin_shift"),
         nb::arg("U"),

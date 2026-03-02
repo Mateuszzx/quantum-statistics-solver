@@ -44,7 +44,7 @@ void bind_chemical_potential(nb::module_ &m) {
     // Scalar binding ONLY - No GIL release, simple and safe
     m.def(
         "chemical_potential_B_scalar",
-        [](qss::DistType dist, double n_assumed, double beta, double H_a_T, int N, Mat2 E, double U,
+        [](qss::DistType dist, double n_assumed, double kBT, double H_a_T, int N, Mat2 E, double U,
             double g, double muB_eV_per_T, const qss::CombinedSolverOptions &opts,
             double a0, double b0, double x0) {
 
@@ -56,19 +56,19 @@ void bind_chemical_potential(nb::module_ &m) {
             qss::Mat Em = numpy_to_mat_safe(E, nx);
 
             // Call C++ logic directly
-            auto R = qss::chemical_potential_B(dist, beta, n_assumed, static_cast<double>(N),
+            auto R = qss::chemical_potential_B(dist, kBT, n_assumed, static_cast<double>(N),
                                                 Em, H_a_T, U, g, muB_eV_per_T, opts, a0, b0, x0);
 
             return nb::make_tuple(R.mu, R.iterations, R.converged, R.error);
         },
-        arg("distro"), arg("n_assumed"), arg("beta"), arg("H_a_T"), arg("N"), arg("E"),
+        arg("distro"), arg("n_assumed"), arg("kBT"), arg("H_a_T"), arg("N"), arg("E"),
         arg("U") = 0.0, arg("g") = 2.0, arg("muB_eV_per_T") = qss::QSS_MU_B_EV_PER_T,
         arg("opts") = qss::CombinedSolverOptions(), arg("a0") = -10.0, arg("b0") = 10.0, arg("x0") = 0.0);
 
     m.def(
         "chemical_potential_B_multi_n",
         [](qss::DistType dist,
-           double beta,
+           double kBT,
            const std::vector<double> &n_vals,
            double N,
            Mat2 E,
@@ -83,7 +83,7 @@ void bind_chemical_potential(nb::module_ &m) {
             auto Em = numpy_to_mat_safe(E, static_cast<size_t>(N));
             const auto results = qss::chemical_potential_B_multi_n(
                 dist,
-                beta,
+                kBT,
                 n_vals,
                 N,
                 Em,
@@ -102,7 +102,7 @@ void bind_chemical_potential(nb::module_ &m) {
             return out;
         },
         arg("dist"),
-        arg("beta"),
+        arg("kBT"),
         arg("n_vals"),
         arg("N"),
         arg("E"),

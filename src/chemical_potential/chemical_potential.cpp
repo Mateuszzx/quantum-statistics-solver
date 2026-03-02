@@ -50,7 +50,7 @@ namespace
     // Unified internal solver returning diagnostics (callers can discard fields)
     static ChemicalPotentialResult solve_mu(
         DistType dist,
-        double beta,
+        double kBT,
         double n_assumed,
         const double N,
         const Mat &E,
@@ -67,7 +67,7 @@ namespace
             throw std::invalid_argument("chemical_potential_B: kx/ky vs E shape mismatch");
 
         auto f = [&](double mu) {
-            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, beta, dist, U, delta)) - n_assumed;
+            return qss::math::mean_abs_2d(qss::chem::distribution_total(E, mu, kBT, dist, U, delta)) - n_assumed;
         };
 
         qss::OptimizationSolver solver(opts);
@@ -118,10 +118,10 @@ namespace
     }
 } // namespace
 
-// Single beta
+// Single kBT
 ChemicalPotentialResult chemical_potential_B(
     DistType dist,
-    double beta,
+    double kBT,
     double n_assumed,
     const double N,
     const Mat &E,
@@ -136,19 +136,19 @@ ChemicalPotentialResult chemical_potential_B(
 {
     const double delta = 0.5 * g * muB_eV_per_T * H_a_T;
     ChemicalPotentialResult R = solve_mu(
-        dist, beta, n_assumed, N, E, delta, U, solver_opts, a0, b0, x0);
+        dist, kBT, n_assumed, N, E, delta, U, solver_opts, a0, b0, x0);
 
     if (std::isfinite(R.mu)) {
-        const auto F = qss::chem::distribution_total(E, R.mu, beta, dist, U, delta);
+        const auto F = qss::chem::distribution_total(E, R.mu, kBT, dist, U, delta);
         R.error = std::abs(qss::math::mean_abs_2d(F) - n_assumed);
     }
     return R;
 }
 
-// Vector of betas
-std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
+// Vector of kBTs
+std::vector<ChemicalPotentialResult> chemical_potential_B_multi_kBT(
     DistType dist,
-    const Vec &betas,
+    const Vec &kBTs,
     double n_assumed,
     const double N,
     const Mat &E,
@@ -162,8 +162,8 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
     double x0)
 {
     std::vector<ChemicalPotentialResult> out;
-    out.reserve(betas.size());
-    for (double b : betas) {
+    out.reserve(kBTs.size());
+    for (double b : kBTs) {
         out.push_back(chemical_potential_B(
             dist, b, n_assumed, N, E, H_a_T, U, g, muB_eV_per_T,
             solver_opts, a0, b0, x0));
@@ -174,7 +174,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_beta(
 // Multi-n
 std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
     DistType dist,
-    double beta,
+    double kBT,
     const Vec &n_assumed_values,
     const double N,
     const Mat &E,
@@ -192,7 +192,7 @@ std::vector<ChemicalPotentialResult> chemical_potential_B_multi_n(
     for (double n_assumed : n_assumed_values) {
         out.push_back(chemical_potential_B(
             dist,
-            beta,
+            kBT,
             n_assumed,
             N,
             E,

@@ -13,11 +13,11 @@ static Mat zeros_mat(std::size_t ny, std::size_t nx)
 
 TEST(ChemicalPotential, ZeroField_HalfOccupancy_muZero)
 {
-	// E grid all zeros -> mean_abs_2d(F,N) == f(0; mu, beta)
-	// For FD with spin=2, n_assumed=1.0 implies mu=0 for any beta
+	// E grid all zeros -> mean_abs_2d(F,N) == f(0; mu, kBT)
+	// For FD with spin=2, n_assumed=1.0 implies mu=0 for any kBT
 	const std::size_t N = 6;
 	const Mat E = zeros_mat(N, N);
-	const double beta = 1.7;
+	const double kBT = 1.7;
 	const double n_assumed = 1.0; // half occupancy (spin=2)
 
 	CombinedSolverOptions opts; // defaults: Brent root solver, expansion bracketer
@@ -25,7 +25,7 @@ TEST(ChemicalPotential, ZeroField_HalfOccupancy_muZero)
 	opts.root.rel_tol = 1e-9;
 
 	const ChemicalPotentialResult mu = chemical_potential_B(DistType::FD,
-										   beta,
+										   kBT,
 										   n_assumed,
 										   (double)N,
 										   E,
@@ -44,12 +44,12 @@ TEST(ChemicalPotential, VectorBetas_muZero)
 {
 	const std::size_t N = 5;
 	const Mat E = zeros_mat(N, N);
-	const Vec betas = {0.5, 1.0, 2.0, 5.0};
+	const Vec kBTs = {0.5, 1.0, 2.0, 5.0};
 	const double n_assumed = 1.0; // half occupancy
 
 	CombinedSolverOptions opts;
-	const std::vector<ChemicalPotentialResult> mus = chemical_potential_B_multi_beta(DistType::FD,
-										 betas,
+	const std::vector<ChemicalPotentialResult> mus = chemical_potential_B_multi_kBT(DistType::FD,
+										 kBTs,
 										 n_assumed,
 										 (double)N,
 										 E,
@@ -61,7 +61,7 @@ TEST(ChemicalPotential, VectorBetas_muZero)
 										 -5.0,
 										 5.0,
 										 0.0);
-	ASSERT_EQ(mus.size(), betas.size());
+	ASSERT_EQ(mus.size(), kBTs.size());
 	for (const auto& mu : mus)
 		EXPECT_NEAR(mu.mu, 0.0, 1e-8);
 }
@@ -71,7 +71,7 @@ TEST(ChemicalPotential, NonZeroField_TwoChannelsSum_muZeroFor_n2)
 	// With E=0, delta != 0, F = f(-delta) + f(+delta). For mu=0 this sum is 2.0.
 	const std::size_t N = 4;
 	const Mat E = zeros_mat(N, N);
-	const double beta = 3.0;
+	const double kBT = 3.0;
 	const double H = 7.5;    // Tesla
 	const double g = 2.0;    // electron g-factor
 	const double muB = QSS_MU_B_EV_PER_T;
@@ -79,7 +79,7 @@ TEST(ChemicalPotential, NonZeroField_TwoChannelsSum_muZeroFor_n2)
 
 	CombinedSolverOptions opts;
 	const ChemicalPotentialResult mu = chemical_potential_B(DistType::FD,
-										   beta,
+										   kBT,
 										   n_assumed,
 										   (double)N,
 										   E,

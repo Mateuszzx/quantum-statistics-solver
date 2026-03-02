@@ -51,7 +51,7 @@ def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
             raise ValueError(f"Unknown distribution: {distro}")
 
 
-def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np.ndarray:
+def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, n_kd: np.ndarray, distro: str) -> np.ndarray:
     """
     Calculate total entropy per k-state given occupancies of both channels.
     Handles correlations (like in SSL) correctly.
@@ -104,6 +104,18 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, distro: str) -> np
             ln_hole = safe_log(n_hole)
 
             return np.array(-n_up * ln_n_up - n_down * ln_n_down - n_hole * ln_hole)
+
+        case "HUBBARD":
+            term1 = n_up - n_kd
+            term2 = n_down - n_kd
+            term3 = 1 - n_up - n_down + n_kd
+
+            return np.array(
+                -term1 * safe_log(term1)
+                - term2 * safe_log(term2)
+                -n_kd * safe_log(n_kd)
+                - term3 * safe_log(term3)
+            )
         case _:
             # Default: sum of independent channel entropies
             return np.array(
@@ -161,29 +173,27 @@ def entropy(
 
         mu = row.mu
 
-        # Handle temperature
-        beta = np.inf if k_BT == 0 else 1.0 / k_BT
-
         if H_a == 0:
             # Spin degenerate case
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_single = distribution(E, mu, beta, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
-
+            n_single = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
+            n_kd = distribution(E, mu, k_BT, delta=0.0, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True)
             # Total entropy
-            s_k = calculate_entropy_k(n_single, n_single, distro_str)
+            # Pass same n for both channels (degenerate)
+            s_k = calculate_entropy_k(n_single, n_single, n_kd, distro_str)
             avg_entropy = np.mean(s_k)
         else:
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
 
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_up = distribution(E, mu, beta, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
             n_down = distribution(
-                E, mu, beta, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
             )
-
+            n_kd = distribution(E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True)
             # Total entropy
-            s_k = calculate_entropy_k(n_up, n_down, distro_str)
+            s_k = calculate_entropy_k(n_up, n_down, n_kd, distro_str)
             avg_entropy = np.mean(s_k)
 
         entropies.append(avg_entropy)
