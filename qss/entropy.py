@@ -51,7 +51,9 @@ def entropy_single_channel(n: np.ndarray, distro: str) -> np.ndarray:
             raise ValueError(f"Unknown distribution: {distro}")
 
 
-def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, n_kd: np.ndarray, distro: str) -> np.ndarray:
+def calculate_entropy_k(
+    n_up: np.ndarray, n_down: np.ndarray, n_kd: np.ndarray, distro: str
+) -> np.ndarray:
     """
     Calculate total entropy per k-state given occupancies of both channels.
     Handles correlations (like in SSL) correctly.
@@ -113,7 +115,7 @@ def calculate_entropy_k(n_up: np.ndarray, n_down: np.ndarray, n_kd: np.ndarray, 
             return np.array(
                 -term1 * safe_log(term1)
                 - term2 * safe_log(term2)
-                -n_kd * safe_log(n_kd)
+                - n_kd * safe_log(n_kd)
                 - term3 * safe_log(term3)
             )
         case _:
@@ -177,7 +179,9 @@ def entropy(
             # Spin degenerate case
             # distribution() returns single-spin occupancy (0..1 for FD)
             n_single = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
-            n_kd = distribution(E, mu, k_BT, delta=0.0, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True)
+            n_kd = distribution(
+                E, mu, k_BT, delta=0.0, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True
+            )
             # Total entropy
             # Pass same n for both channels (degenerate)
             s_k = calculate_entropy_k(n_single, n_single, n_kd, distro_str)
@@ -191,7 +195,9 @@ def entropy(
             n_down = distribution(
                 E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
             )
-            n_kd = distribution(E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True)
+            n_kd = distribution(
+                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True
+            )
             # Total entropy
             s_k = calculate_entropy_k(n_up, n_down, n_kd, distro_str)
             avg_entropy = np.mean(s_k)

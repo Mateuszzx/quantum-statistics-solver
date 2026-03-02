@@ -472,7 +472,7 @@ class ScientificPlotter:
             n_val = current_params.get("n", "var")
             kBT_val = current_params.get("kBT", "var")
             H_val = current_params.get("H_a", 0.0)
-            
+
             for distro in distros:
                 try:
                     # Filter logic depends on index structure. Assuming MultiIndex (distro, n, k_BT, H_a)
