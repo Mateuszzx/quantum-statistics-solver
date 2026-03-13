@@ -17,11 +17,13 @@ if HAS_QSS:
 class TestChemicalPotential:
     def test_coerce_native_distro(self):
         assert _coerce_native_distro("FD") == _qss.DistType.FD
+        assert _coerce_native_distro("NFL_REWORKED") == _qss.DistType.NFL_REWORKED
         with pytest.raises(TypeError):
             _coerce_native_distro(123)
 
     def test_dist_label(self):
         assert _dist_label("FD") == "FD"
+        assert _dist_label("nfl_reworked") == "NFL_REWORKED"
         assert _dist_label(_qss.DistType.FD) == "FD"
 
     @patch("qss.chemical_potential._qss.chemical_potential_B_multi_n")
@@ -131,6 +133,26 @@ class TestChemicalPotential:
         assert df.index[0][0] == "FD"
 
     @patch("qss.chemical_potential._qss.chemical_potential_B_multi_n")
+    def test_chemical_potential_single_distro_reworked_enum(self, mock_calc):
+        mock_calc.return_value = [(0.25, 4, True, 0.0)]
+        E = np.zeros((2, 2))
+
+        from qss.distributions import DistType as PyDistType
+
+        df = chemical_potential(
+            distros=PyDistType.NFL_REWORKED,
+            n_vals=[0.5],
+            kBT_vals=[0.2],
+            H_a_vals=[0.0],
+            E=E
+        )
+
+        assert len(df) == 1
+        assert df.index[0] == ("NFL_REWORKED", 0.5, 0.2, 0.0)
+        args, _ = mock_calc.call_args
+        assert args[0] == _qss.DistType.NFL_REWORKED
+
+    @patch("qss.chemical_potential._qss.chemical_potential_B_multi_n")
     def test_chemical_potential_custom_N(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
         E = np.zeros((2, 2))
@@ -162,11 +184,14 @@ class TestChemicalPotential:
     def test_coerce_native_distro_variants(self):
         # Test string
         assert _coerce_native_distro("FD") == _qss.DistType.FD
+        assert _coerce_native_distro("NFL_REWORKED") == _qss.DistType.NFL_REWORKED
         # Test PyDistType
         from qss.distributions import DistType as PyDistType
         assert _coerce_native_distro(PyDistType.FD) == _qss.DistType.FD
+        assert _coerce_native_distro(PyDistType.NFL_REWORKED) == _qss.DistType.NFL_REWORKED
         # Test native
         assert _coerce_native_distro(_qss.DistType.FD) == _qss.DistType.FD
+        assert _coerce_native_distro(_qss.DistType.NFL_REWORKED) == _qss.DistType.NFL_REWORKED
 
     @patch("qss.chemical_potential._qss.chemical_potential_B_multi_n")
     def test_chemical_potential_native_solver_opts(self, mock_calc):

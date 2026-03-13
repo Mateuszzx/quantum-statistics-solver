@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from unittest.mock import patch
 
-from qss.entropy import entropy, entropy_single_channel, safe_log
+from qss.entropy import calculate_entropy_k, entropy, entropy_single_channel, safe_log
 
 def test_safe_log():
     arr = np.array([0.0, 1.0, np.e, -1.0])
@@ -111,3 +111,29 @@ def test_entropy_ssl_calculation(sample_energy_matrix):
     with patch("qss.entropy.distribution", return_value=n_val * np.ones_like(sample_energy_matrix)):
         df_result = entropy(df, sample_energy_matrix)
         assert df_result["entropy"].iloc[0] == pytest.approx(expected_S)
+
+
+def test_entropy_nfl_reworked_matches_nfl_formula():
+    n_up = np.array([0.25])
+    n_down = np.array([0.20])
+    n_kd = np.array([0.0])
+
+    s_nfl = calculate_entropy_k(n_up, n_down, n_kd, "NFL")
+    s_reworked = calculate_entropy_k(n_up, n_down, n_kd, "NFL_REWORKED")
+
+    assert s_reworked[0] == pytest.approx(s_nfl[0])
+
+
+def test_entropy_dataframe_nfl_reworked(sample_energy_matrix):
+    df = pd.DataFrame({
+        "distro": ["NFL_REWORKED"],
+        "n": [0.45],
+        "k_BT": [0.2],
+        "H_a": [0.0],
+        "mu": [0.1]
+    })
+
+    with patch("qss.entropy.distribution", return_value=0.2 * np.ones_like(sample_energy_matrix)):
+        df_result = entropy(df, sample_energy_matrix)
+        assert "entropy" in df_result.columns
+        assert np.isfinite(df_result["entropy"].iloc[0])

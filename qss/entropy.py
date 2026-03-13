@@ -73,7 +73,7 @@ def calculate_entropy_k(
         Total entropy values per k-state.
     """
     match distro:
-        case "NFL":
+        case "NFL" | "NFL_REWORKED":
             # NFL: S = -n_up ln n_up - n_down ln n_down +
             #       2* (1 - n_up - n_down) ln(1 - n_up - n_down) +
             #       (1 - n_up) ln(1 - n_up)

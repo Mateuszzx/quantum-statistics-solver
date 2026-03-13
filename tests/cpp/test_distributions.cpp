@@ -138,11 +138,13 @@ TEST(Distributions, DispatchOtherTypes) {
 
     // Just verify they return values and don't crash/return nullopt
     EXPECT_TRUE(qss::distribution(ek, mu, beta, 0.0, 0, 0.0, DistType::FLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek, mu, beta, 0.0, 0, 0.0, DistType::NFL_REWORKED).has_value());
     EXPECT_TRUE(qss::distribution(ek, mu, beta, 0.0, 0, 0.0, DistType::NFLB).has_value());
 
     // Vector versions
     qss::Vec ek_vec = {0.5};
     EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, 0.0, 0, 0.0, DistType::FLB).has_value());
+    EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, 0.0, 0, 0.0, DistType::NFL_REWORKED).has_value());
     EXPECT_TRUE(qss::distribution(ek_vec, mu, beta, 0.0, 0, 0.0, DistType::NFLB).has_value());
 }
 
@@ -182,6 +184,32 @@ TEST(Distributions, NFL_Scalar_Range)
     // f = 1 + 0.5 - sqrt(1*1 + 0.25) = 1.5 - sqrt(1.25) = 1.5 - 1.118 = 0.382
     EXPECT_GT(*opt, 0.0);
     EXPECT_LT(*opt, 0.5);
+}
+
+TEST(Distributions, NFLReworked_ValueAtZero)
+{
+    const double mu = 0.0;
+    const double kBT = 1.0;
+    const double delta = 0.0;
+    const double ek = 0.0;
+
+    auto opt = qss::distribution(ek, mu, kBT, delta, 1, 0.0, DistType::NFL_REWORKED);
+    ASSERT_TRUE(opt.has_value());
+    EXPECT_NEAR(*opt, 0.27639320225002106, 1e-12);
+}
+
+TEST(Distributions, NFLReworked_SpinSumBoundedByOne)
+{
+    const double mu = 0.5;
+    const double kBT = 0.2;
+    const double delta = 0.05;
+    const double ek = 0.0;
+
+    auto up = qss::distribution(ek, mu, kBT, delta, 1, 0.0, DistType::NFL_REWORKED);
+    auto down = qss::distribution(ek, mu, kBT, delta, -1, 0.0, DistType::NFL_REWORKED);
+    ASSERT_TRUE(up.has_value());
+    ASSERT_TRUE(down.has_value());
+    EXPECT_LE(*up + *down, 1.0 + 1e-12);
 }
 
 

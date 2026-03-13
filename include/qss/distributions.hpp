@@ -24,6 +24,7 @@ enum class DistType
     FD,     ///< Fermi-Dirac distribution
     FLB,    ///< Fermi-Liquid-Like distribution
     NFL,    ///< Non-Fermi-Liquid distribution
+    NFL_REWORKED, ///< Alternative NFL stationary-solution distribution
     NFLB,   ///< Non-Fermi-Liquid with Boltzmann distribution
     SSL,   ///< Spin-Split Liquid distribution
     HUBBARD, ///< Hubbard distribution (includes U parameter)
@@ -111,6 +112,12 @@ double flb_distribution(double e_k, double mu, double kBT, double delta, int spi
  * @internal
  */
 double nfl_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
+
+/**
+ * @brief Compute the reworked Non-Fermi-Liquid distribution for a single state.
+ * @internal
+ */
+double nfl_reworked_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept;
 
 /**
  * @brief Compute Non-Fermi-Liquid with Boltzmann distribution for a single state.

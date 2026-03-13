@@ -38,6 +38,7 @@ class DistType(Enum):
     FD = "FD"
     FLB = "FLB"
     NFL = "NFL"
+    NFL_REWORKED = "NFL_REWORKED"
     NFLB = "NFLB"
     SSL = "SSL"
     HUBBARD = "HUBBARD"
@@ -94,6 +95,7 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
     dist_map = {
         "FD": _qss.DistType.FD,
         "FLB": _qss.DistType.FLB,
+        "NFL_REWORKED": _qss.DistType.NFL_REWORKED,
         "NFLB": _qss.DistType.NFLB,
         "SSL": _qss.DistType.SSL,
         "NFL": _qss.DistType.NFL,

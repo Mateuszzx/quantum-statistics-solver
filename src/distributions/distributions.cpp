@@ -30,6 +30,8 @@ std::optional<double> distribution(double e_k,
         return flb_distribution(e_k, mu, kBT, delta, spin_shift);
     case DistType::NFL:
         return nfl_distribution(e_k, mu, kBT, delta, spin_shift);
+    case DistType::NFL_REWORKED:
+        return nfl_reworked_distribution(e_k, mu, kBT, delta, spin_shift);
     case DistType::NFLB:
         return nflb_distribution(e_k, mu, kBT, delta, spin_shift);
     case DistType::SSL:

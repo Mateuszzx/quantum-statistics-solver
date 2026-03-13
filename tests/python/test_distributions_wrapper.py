@@ -15,8 +15,10 @@ from qss.distributions import distribution, DistType, _get_cpp_dist_type
 class TestDistributionWrapper:
     def test_get_cpp_dist_type(self):
         assert _get_cpp_dist_type("FD") == _qss.DistType.FD
+        assert _get_cpp_dist_type("NFL_REWORKED") == _qss.DistType.NFL_REWORKED
         assert _get_cpp_dist_type("HUBBARD") == _qss.DistType.HUBBARD
         assert _get_cpp_dist_type(DistType.FD) == _qss.DistType.FD
+        assert _get_cpp_dist_type(DistType.NFL_REWORKED) == _qss.DistType.NFL_REWORKED
         assert _get_cpp_dist_type(_qss.DistType.FD) == _qss.DistType.FD
 
         with pytest.raises(ValueError):
@@ -43,6 +45,6 @@ class TestDistributionWrapper:
 
     def test_distribution_types(self):
         e_k = np.array([0.0])
-        for dt in ["FD", "FLB", "SSL", "NFL", "NFLB", "HUBBARD"]:
+        for dt in ["FD", "FLB", "SSL", "NFL", "NFL_REWORKED", "NFLB", "HUBBARD"]:
             res = distribution(e_k, 0.0, 1.0, 0.0, 0, dist_type=dt)
             assert res.shape == (1,)
