@@ -28,7 +28,7 @@ std::optional<double> distribution(double e_k,
         return fd_distribution(e_k, mu, kBT, delta, spin_shift);
     case DistType::FLB:
         return flb_distribution(e_k, mu, kBT, delta, spin_shift);
-    case DistType::NFL:
+    case DistType::NFL: // pamiętać o zaaliasowaniu do wersji reworked potem albo podmienić rozwiązanie w nfl.cpp
         return nfl_distribution(e_k, mu, kBT, delta, spin_shift);
     case DistType::NFL_REWORKED:
         return nfl_reworked_distribution(e_k, mu, kBT, delta, spin_shift);
