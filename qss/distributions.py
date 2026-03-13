@@ -77,7 +77,7 @@ def prepare_2D_lattice_data(
     # 2D tight-binding dispersion relation
     cos_kx = np.cos(KX)
     cos_ky = np.cos(KY)
-    e_k = 2 * t * (cos_kx + cos_ky) + 2 * t_prim * (cos_kx + cos_ky)
+    e_k = 2 * t * (cos_kx + cos_ky) + 4 * t_prim * cos_kx * cos_ky
 
     return e_k, KX, KY
 

@@ -27,6 +27,7 @@ class PlotConfig:
         "FD": "blue",
         "FLB": "red",
         "NFL": "purple",
+        "NFL_REWORKED": "teal",
         "NFLB": "green",
         "SSL": "black",
         "HUBBARD": "orange",
@@ -37,6 +38,7 @@ class PlotConfig:
         "FD": "-",
         "FLB": "--",
         "NFL": "-.",
+        "NFL_REWORKED": (0, (5, 2, 1, 2)),
         "NFLB": ":",
         "SSL": (0, (3, 1, 1, 1)), # Dotted dash,
         "HUBBARD": (0, (5, 1)), # Dashed with longer dashes
@@ -195,14 +197,14 @@ class ScientificPlotter:
         ax_inset.annotate(
             "", xy=(1.3, 0.0), xytext=(-1.2, 0.0),
             arrowprops=dict(arrowstyle="-|>", linewidth=2.0, color="black"),
-            zorder=10, clip_on=False, annotation_clip=False
+            zorder=0, clip_on=False, annotation_clip=False
         )
         ax_inset.text(1.15, 0.05, r"$k_x$", ha="left", va="bottom", fontsize=14, clip_on=False)
 
         ax_inset.annotate(
             "", xy=(0.0, 1.3), xytext=(0.0, -1.2),
             arrowprops=dict(arrowstyle="-|>", linewidth=2.0, color="black"),
-            zorder=10, clip_on=False, annotation_clip=False
+            zorder=0, clip_on=False, annotation_clip=False
         )
         ax_inset.text(0.05, 1.1, r"$k_y$", ha="left", va="bottom", fontsize=14, clip_on=False)
 
@@ -282,7 +284,7 @@ class ScientificPlotter:
                     n_k_plus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=-1, dist_type=distro, U=U, n_kd = n_kd)
                     n_k_minus = dist.distribution(e_k, mu=mu, kBT=kBT, delta=delta, spin_shift=1, dist_type=distro, U=U, n_kd = n_kd)
 
-                    if distro in ["NFL", "NFLB", "SSL"]:
+                    if distro in ["NFL", "NFL_REWORKED", "NFLB", "SSL"]:
                         n_k_plus = np.clip(n_k_plus, 0, 1.0)
                         n_k_minus = np.clip(n_k_minus, 0, 1.0)
 
