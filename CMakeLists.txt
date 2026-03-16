@@ -239,21 +239,11 @@ if(ENABLE_PY_MODULE)
     set(SKBUILD_PLATLIB_DIR "${CMAKE_INSTALL_PREFIX}/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
   endif()
 
-  # Install compiled Python extension (_qss.so or _qss.pyd)
-  # Skip for editable installs (pip install -e .)
-  if(TARGET _qss AND NOT SKBUILD_STATE STREQUAL "editable")
-    install(
-      TARGETS _qss
-      LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss
-      RUNTIME DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss  # For Windows DLLs
-    )
-    message(STATUS "Python extension will be installed to: ${SKBUILD_PLATLIB_DIR}/_qss")
-  endif()
-
-  # Always install Python source files (.py)
+  # Install Python source files to the `qss` package namespace.
+  # The compiled `_qss` extension is installed in src/bindings/CMakeLists.txt.
   install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/_qss/
-    DESTINATION ${SKBUILD_PLATLIB_DIR}/_qss
+    DIRECTORY ${PROJECT_SOURCE_DIR}/qss/
+    DESTINATION ${SKBUILD_PLATLIB_DIR}/qss
     FILES_MATCHING
     PATTERN "*.py"
     PATTERN "__pycache__" EXCLUDE

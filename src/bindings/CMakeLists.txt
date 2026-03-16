@@ -128,27 +128,26 @@ endif()
 # Installation Rules
 # ------------------------------------------------------------------------------
 
-# Install the Python extension to the appropriate site-packages directory
-if(NOT SKBUILD_STATE STREQUAL "editable")
-  # If using scikit-build-core (pip install)
-  if(DEFINED SKBUILD_PLATLIB_DIR)
-    install(TARGETS _qss
-      LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
-      RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
-    )
-  else()
-    # Fallback: use Python's platlib location (for 'make install')
-    execute_process(
-      COMMAND "${Python_EXECUTABLE}" -c
-        "import sysconfig; print(sysconfig.get_path('platlib'))"
-      OUTPUT_VARIABLE Python_SITEARCH
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    install(TARGETS _qss
-      LIBRARY DESTINATION "${Python_SITEARCH}/qss"
-      RUNTIME DESTINATION "${Python_SITEARCH}/qss"
-    )
-  endif()
+# Install the Python extension to the appropriate site-packages directory.
+# Keep this active for editable installs as well, otherwise `pip/uv install -e .`
+# will expose Python sources but miss the compiled `_qss` module.
+if(DEFINED SKBUILD_PLATLIB_DIR)
+  install(TARGETS _qss
+    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
+    RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}/qss"
+  )
+else()
+  # Fallback: use Python's platlib location (for 'make install')
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c
+      "import sysconfig; print(sysconfig.get_path('platlib'))"
+    OUTPUT_VARIABLE Python_SITEARCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  install(TARGETS _qss
+    LIBRARY DESTINATION "${Python_SITEARCH}/qss"
+    RUNTIME DESTINATION "${Python_SITEARCH}/qss"
+  )
 endif()
 
 # ------------------------------------------------------------------------------
