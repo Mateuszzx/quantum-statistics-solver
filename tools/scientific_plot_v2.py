@@ -14,20 +14,20 @@ from qss import distributions as dist
 @dataclass
 class PlotConfig:
     """Configuration for plot styling."""
-    fontsize: int = 24
+    fontsize: int = 30
     ticks_len: int = 10
     ticks_width: int = 3
     spine_width: float = 3
-    legend_fontsize: int = 16
+    legend_fontsize: int = 30
     legend_loc: str = "best"
     cmap: str = "plasma"
-    linewidth: float = 3.0
+    linewidth: float = 6.0
 
     dist_colors: Dict[str, str] = field(default_factory=lambda: {
         "FD": "blue",
         "FLB": "red",
         "NFL": "purple",
-        "NFL_REWORKED": "teal",
+        "NFL_REWORKED": "red",
         "NFLB": "green",
         "SSL": "black",
         "HUBBARD": "orange",
@@ -84,7 +84,7 @@ class ScientificPlotter:
             ax.set_title(title, fontsize=cfg.fontsize)
 
         if show_legend:
-            ax.legend(loc=cfg.legend_loc, fontsize=cfg.legend_fontsize)
+            ax.legend(loc=cfg.legend_loc, fontsize=cfg.legend_fontsize, frameon=False)
 
         if show_grid:
             ax.grid(True)
@@ -113,10 +113,12 @@ class ScientificPlotter:
     def _add_log_vals_axis(self, ax):
         cfg = self.config
         ax2 = ax.twinx()
-        log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
+        #log_vals = [np.log(2), 2*np.log(2), 3*np.log(2)]
+        log_vals = [np.log(2), 2*np.log(2)]
         ax2.tick_params(axis='y', which='major', direction="in", width=cfg.ticks_width,
                         length=cfg.ticks_len, labelsize=cfg.fontsize)
-        ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 \\ln2$", "$3 \\ln2$"], fontsize=cfg.fontsize)
+        #ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 \\ln2$", "$3 \\ln2$"], fontsize=cfg.fontsize)
+        ax2.set_yticks(log_vals, labels=["$\\ln2$", "$2 \\ln2$"], fontsize=cfg.fontsize)
 
         supp_colors = ['green', 'blue', 'red']
         limit = 3.2 * np.log(2)
@@ -191,7 +193,7 @@ class ScientificPlotter:
         for name, (x, y) in pts.items():
             label = r"$\Gamma$" if name == "G" else f"${name}$"
             dx, dy = label_pos[name]
-            ax_inset.text(dx, dy, label, fontsize=14, ha="center", va="center")
+            ax_inset.text(dx, dy, label, fontsize=20, ha="center", va="center")
 
         # --- Center axes arrows (crossing borders) ---
         ax_inset.annotate(
@@ -199,14 +201,14 @@ class ScientificPlotter:
             arrowprops=dict(arrowstyle="-|>", linewidth=2.0, color="black"),
             zorder=0, clip_on=False, annotation_clip=False
         )
-        ax_inset.text(1.15, 0.05, r"$k_x$", ha="left", va="bottom", fontsize=14, clip_on=False)
+        ax_inset.text(1.15, 0.05, r"$k_x$", ha="left", va="bottom", fontsize=20, clip_on=False)
 
         ax_inset.annotate(
             "", xy=(0.0, 1.3), xytext=(0.0, -1.2),
             arrowprops=dict(arrowstyle="-|>", linewidth=2.0, color="black"),
             zorder=0, clip_on=False, annotation_clip=False
         )
-        ax_inset.text(0.05, 1.1, r"$k_y$", ha="left", va="bottom", fontsize=14, clip_on=False)
+        ax_inset.text(0.05, 1.1, r"$k_y$", ha="left", va="bottom", fontsize=20, clip_on=False)
 
         # --- Custom tick marks + labels on center axes ---
         tick_positions = [-1, 1]
@@ -214,9 +216,9 @@ class ScientificPlotter:
         tlen = 0.04
         for t, lbl in zip(tick_positions, tick_labels):
             ax_inset.plot([t, t], [-tlen, tlen], color="black", lw=1, zorder=9)
-            ax_inset.text(t-0.15, -0.05, lbl, ha="right", va="top", fontsize=14)
+            ax_inset.text(t-0.15, -0.05, lbl, ha="right", va="top", fontsize=20)
             ax_inset.plot([-tlen, tlen], [t, t], color="black", lw=1, zorder=9)
-            ax_inset.text(-0.08, t-0.1, lbl, ha="right", va="top", fontsize=14)
+            ax_inset.text(-0.08, t-0.1, lbl, ha="right", va="top", fontsize=20)
 
         return ax_inset
 
@@ -252,21 +254,21 @@ class ScientificPlotter:
 
         total_rows =  n_num * (1 if is_H_zero else 2)
 
-        fig, ax = plt.subplots(nrows=num_kBTs, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows))
+        fig, ax = plt.subplots(nrows=num_kBTs, ncols=total_rows, figsize=(figsize[0], figsize[1] * total_rows), sharex=True)
         ax = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
 
         delta = H * 0.5 * g * mu_B
 
         # Determine slice parameters
         if slice_type == "horizontal":
-            slice_label = r"$\Gamma - X$"
+            slice_label = r"$\Gamma - X,~ direction$"
             highlight = ["G-X"]
             # Assuming kx is symmetric and centered at 0, we want positive half
             # Original code: kx[N//2:]
             x_axis = kx[N//2:]
             slice_func = lambda arr: arr[N//2, N//2:]
         elif slice_type == "diagonal":
-            slice_label = r"$\Gamma - M$"
+            slice_label = r"$\Gamma - M~ direction$"
             highlight = ["G-M"]
             x_axis = kx[N//2:] # Diagonal projection on kx is same length if square
             slice_func = lambda arr: np.diag(arr)[N//2:]
@@ -291,7 +293,7 @@ class ScientificPlotter:
                     data_per_distro[distro] = (n_k_plus, n_k_minus)
 
                 # Plotting
-                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$"#\n$\\mu H / |t| = {H}$\n$U = {U}$"
+                text = f"$t = -1$\n$t' / |t| = {0.25}$\n$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$"#\n$\\mu H / |t| = {H}$\n$U = {U}$"
 
                 if is_H_zero:
                     current_ax = ax[plot_idx]
@@ -303,10 +305,11 @@ class ScientificPlotter:
                                         linestyle=self.config.get_linestyle(distro),
                                         linewidth=self.config.linewidth, label=distro)
 
-                    self.add_bz_inset(current_ax, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(current_ax, xlabel=slice_label, ylabel="occupancy, $n_k$",
-                                     text=text, text_pos=text_pos, ylims=ylims)
-                    current_ax.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
+                    if plot_idx == 0:
+                        self.add_bz_inset(current_ax, pos=bz_inset_pos, highlight=highlight)
+                    self._setup_axis(current_ax, xlabel=None, ylabel="occupancy, $n_k$",
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx == 0))
+                    current_ax.set_xticks(np.array([0,np.pi/4, np.pi/2,3*np.pi/4, np.pi]),["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     current_ax.set_xlim(0, np.pi)
                     plot_idx += 1
                 else:
@@ -319,10 +322,11 @@ class ScientificPlotter:
                                      linestyle=self.config.get_linestyle(distro),
                                      linewidth=self.config.linewidth, label=distro)
 
-                    self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_plus, xlabel=slice_label, ylabel="occupancy, $n_{k\\uparrow}$",
-                                     text=text, text_pos=text_pos, ylims=ylims)
-                    ax_plus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
+                    if plot_idx ==0:
+                        self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
+                    self._setup_axis(ax_plus, xlabel=None, ylabel="occupancy, $n_{k\\uparrow}$",
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx==0))
+                    ax_plus.set_xticks(np.array([0,np.pi/4, np.pi/2,3*np.pi/4, np.pi]), ["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     ax_plus.set_xlim(0, np.pi)
                     plot_idx += 1
 
@@ -335,12 +339,16 @@ class ScientificPlotter:
                                       linestyle=self.config.get_linestyle(distro),
                                       linewidth=self.config.linewidth, label=distro)
 
-                    self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_minus, xlabel=slice_label, ylabel="occupancy, $n_{k\\downarrow}$",
-                                     text=text, text_pos=text_pos, ylims=ylims)
-                    ax_minus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
+                    if plot_idx ==0:
+                        self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
+                    self._setup_axis(ax_minus, xlabel=None, ylabel="occupancy, $n_{k\\downarrow}$",
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx==0))
+                    ax_minus.set_xticks(np.array([0,np.pi/4, np.pi/2, 3*np.pi/4, np.pi]),["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     ax_minus.set_xlim(0, np.pi)
                     plot_idx += 1
+        fig.supxlabel(slice_label, fontsize=self.config.fontsize)
+        fig.tight_layout()
+
 
     def plot_energy_distribution_2d(self, e_k: np.ndarray,
                                     dim: int = 2,
