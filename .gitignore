@@ -63,6 +63,11 @@ html/
 *.code-workspace
 .history
 
+### python
+
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
 ################################
 ###########   VS    ############
 ################################

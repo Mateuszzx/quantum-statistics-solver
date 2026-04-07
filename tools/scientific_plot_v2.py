@@ -291,7 +291,7 @@ class ScientificPlotter:
                     data_per_distro[distro] = (n_k_plus, n_k_minus)
 
                 # Plotting
-                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$\n$\\mu H / |t| = {H}$\n$U = {U}$"
+                text = f"$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$"#\n$\\mu H / |t| = {H}$\n$U = {U}$"
 
                 if is_H_zero:
                     current_ax = ax[plot_idx]
@@ -304,7 +304,7 @@ class ScientificPlotter:
                                         linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(current_ax, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(current_ax, xlabel=slice_label, ylabel="spin occupancy $n_k$",
+                    self._setup_axis(current_ax, xlabel=slice_label, ylabel="occupancy, $n_k$",
                                      text=text, text_pos=text_pos, ylims=ylims)
                     current_ax.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
                     current_ax.set_xlim(0, np.pi)
@@ -320,7 +320,7 @@ class ScientificPlotter:
                                      linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_plus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\uparrow}$",
+                    self._setup_axis(ax_plus, xlabel=slice_label, ylabel="occupancy, $n_{k\\uparrow}$",
                                      text=text, text_pos=text_pos, ylims=ylims)
                     ax_plus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
                     ax_plus.set_xlim(0, np.pi)
@@ -336,7 +336,7 @@ class ScientificPlotter:
                                       linewidth=self.config.linewidth, label=distro)
 
                     self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
-                    self._setup_axis(ax_minus, xlabel=slice_label, ylabel="spin occupancy $n_{k\\downarrow}$",
+                    self._setup_axis(ax_minus, xlabel=slice_label, ylabel="occupancy, $n_{k\\downarrow}$",
                                      text=text, text_pos=text_pos, ylims=ylims)
                     ax_minus.set_xticks(np.array([0, np.pi/2, np.pi]), ["0", "$\\pi/2$", "$\\pi$"])
                     ax_minus.set_xlim(0, np.pi)
@@ -511,15 +511,31 @@ class ScientificPlotter:
                     continue
 
             # Text label
-            text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$U = {U}$"
-            if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
-            if isinstance(kBT_val, (int, float)): text += f"\n$k_B T/|t| = {kBT_val:.2e}$"
-            if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
+            # text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$U = {U}$"
+            # if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
+            # if isinstance(kBT_val, (int, float)): text += f"\n$k_B T/|t| = {kBT_val:.2e}$"
+            # if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
+
+            text_lines = [
+                "$t = -1$",
+                f"$t' / |t| = {t_prim}$",
+                f"$N = {N} \\times {N}$",
+            ]
+
+            if isinstance(n_val, (int, float)):
+                text_lines.append(f"$n = {n_val}$")
+            if isinstance(kBT_val, (int, float)):
+                text_lines.append(f"$k_B T/|t| = {kBT_val:.2e}$")
+            if isinstance(H_val, (int, float)) and H_val != 0:
+                text_lines.append(f"$H_a = {H_val}$")
+
+            #text_lines.append(f"$U = {U}$")
+            text = "\n".join(text_lines)
 
             xlabel_map = {
                 "n": "band filling, n",
-                "k_BT": "temperature $k_B T / |t|$",
-                "H_a": "magnetic field $H_a$"
+                "k_BT": "temperature, $k_B T / |t|$",
+                "H_a": "magnetic field, $H_a$"
             }
 
             self._setup_axis(current_ax, xlabel=xlabel_map.get(x_param, x_param), ylabel=y_label,
