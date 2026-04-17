@@ -18,6 +18,7 @@ from .solver_options import (
     brent_defaults,
     sa_defaults,
 )
+from .nkd import n_kd
 
 __all__ = [
     "BracketerType",

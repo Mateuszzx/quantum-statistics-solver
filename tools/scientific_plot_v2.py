@@ -510,7 +510,7 @@ class ScientificPlotter:
 
             # Text label
             text = f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$U = {U}$"
-            if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
+            if isinstance(n_val, (int, float)): text += f"\n$n = {n_val:.2f}$"
             if isinstance(kBT_val, (int, float)): text += f"\n$k_B T/|t| = {kBT_val:.2e}$"
             if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
 
