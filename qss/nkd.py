@@ -3,11 +3,9 @@ Entropy calculation module.
 """
 
 from __future__ import annotations
-from unittest import case
 
 import numpy as np
 import pandas as pd
-
 
 from .distributions import distribution
 
@@ -62,7 +60,6 @@ def n_kd(
 
         mu = row.mu
 
-
         delta = 0.5 * g * muB_eV_per_T * H_a
 
         match distro_str:
@@ -71,10 +68,13 @@ def n_kd(
                     E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True
                 )
             case _:
-                n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
-                n_down = distribution(E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U)
+                n_up = distribution(
+                    E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U
+                )
+                n_down = distribution(
+                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                )
                 n_kd = n_up * n_down
-
 
         avg_nkd = np.mean(n_kd)
 

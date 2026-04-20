@@ -11,6 +11,7 @@ from .chemical_potential import chemical_potential
 from .distributions import DistType, prepare_2D_lattice_data
 from .energy import energy
 from .entropy import entropy
+from .nkd import n_kd
 from .solver_options import (
     BracketerType,
     CoolingSchedule,
@@ -18,7 +19,6 @@ from .solver_options import (
     brent_defaults,
     sa_defaults,
 )
-from .nkd import n_kd
 
 __all__ = [
     "BracketerType",
