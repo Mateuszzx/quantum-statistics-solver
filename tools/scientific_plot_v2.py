@@ -293,7 +293,14 @@ class ScientificPlotter:
                     data_per_distro[distro] = (n_k_plus, n_k_minus)
 
                 # Plotting
-                text = f"$t = -1$\n$t' / |t| = {0.25}$\n$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.1e}$"#\n$\\mu H / |t| = {H}$\n$U = {U}$"
+                #if plot_idx == 0:
+                show_decor = (plot_idx==0)
+                if show_decor:
+                    text = (f"$t = -1$\n$t' / |t| = {0.25}$\n$n = {n_val:.2f}$\n$k_B T/|t| = {kBT:.3g}$"#\n$\\mu H / |t| = {H}$\n$U = {U}$"
+                        )
+                else:
+                    text =(f"$k_B T/|t| = {kBT:.3g}$")
+                #        if show_decor else None)
 
                 if is_H_zero:
                     current_ax = ax[plot_idx]
@@ -305,11 +312,11 @@ class ScientificPlotter:
                                         linestyle=self.config.get_linestyle(distro),
                                         linewidth=self.config.linewidth, label=distro)
 
-                    if plot_idx == 0:
+                    if show_decor:
                         self.add_bz_inset(current_ax, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(current_ax, xlabel=None, ylabel="occupancy, $n_k$",
-                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx == 0))
-                    current_ax.set_xticks(np.array([0,np.pi/4, np.pi/2,3*np.pi/4, np.pi]),["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=show_decor)
+                    current_ax.set_xticks(np.array([np.pi/4, np.pi/2,3*np.pi/4, np.pi]),[ "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     current_ax.set_xlim(0, np.pi)
                     plot_idx += 1
                 else:
@@ -322,10 +329,10 @@ class ScientificPlotter:
                                      linestyle=self.config.get_linestyle(distro),
                                      linewidth=self.config.linewidth, label=distro)
 
-                    if plot_idx ==0:
+                    if plot_idx==0:
                         self.add_bz_inset(ax_plus, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(ax_plus, xlabel=None, ylabel="occupancy, $n_{k\\uparrow}$",
-                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx==0))
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=show_decor)
                     ax_plus.set_xticks(np.array([0,np.pi/4, np.pi/2,3*np.pi/4, np.pi]), ["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     ax_plus.set_xlim(0, np.pi)
                     plot_idx += 1
@@ -339,10 +346,11 @@ class ScientificPlotter:
                                       linestyle=self.config.get_linestyle(distro),
                                       linewidth=self.config.linewidth, label=distro)
 
-                    if plot_idx ==0:
-                        self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
+                    #if plot_idx==0:
+                    #text=None
+                    #    self.add_bz_inset(ax_minus, pos=bz_inset_pos, highlight=highlight)
                     self._setup_axis(ax_minus, xlabel=None, ylabel="occupancy, $n_{k\\downarrow}$",
-                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=(plot_idx==0))
+                                     text=text, text_pos=text_pos, ylims=ylims,show_legend=show_decor)
                     ax_minus.set_xticks(np.array([0,np.pi/4, np.pi/2, 3*np.pi/4, np.pi]),["0", "$\\pi/4$" ,"$\\pi/2$","$3\\pi/4$", "$\\pi$"])
                     ax_minus.set_xlim(0, np.pi)
                     plot_idx += 1
@@ -463,13 +471,12 @@ class ScientificPlotter:
 
         if subplots_param and subplots_vals is not None:
             rows = int(np.ceil(len(subplots_vals)/cols))
-            fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows))
+            fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(figsize[0]*cols, figsize[1]*rows), sharex=True)
             ax_flat = np.array(ax).flatten() if isinstance(ax, np.ndarray) else [ax]
         else:
             fig, ax = plt.subplots(figsize=figsize)
             ax_flat = [ax]
             subplots_vals = [None] # Dummy iteration
-
         for j, sp_val in enumerate(subplots_vals):
             current_ax = ax_flat[j]
 
@@ -523,34 +530,39 @@ class ScientificPlotter:
             # if isinstance(n_val, (int, float)): text += f"\n$n = {n_val}$"
             # if isinstance(kBT_val, (int, float)): text += f"\n$k_B T/|t| = {kBT_val:.2e}$"
             # if isinstance(H_val, (int, float)) and H_val != 0: text += f"\n$H_a = {H_val}$"
-
-            text_lines = [
-                "$t = -1$",
-                f"$t' / |t| = {t_prim}$",
-                f"$N = {N} \\times {N}$",
-            ]
+            if j==0:
+                text_lines = [
+                    "$t = -1$",
+                    f"$t' / |t| = {t_prim}$",
+                    f"$N = {N} \\times {N}$",
+                ]
+            else:
+                text_lines = []
 
             if isinstance(n_val, (int, float)):
                 text_lines.append(f"$n = {n_val}$")
             if isinstance(kBT_val, (int, float)):
-                text_lines.append(f"$k_B T/|t| = {kBT_val:.2e}$")
+                text_lines.append(f"$k_B T/|t| = {kBT_val:.3g}$")
             if isinstance(H_val, (int, float)) and H_val != 0:
-                text_lines.append(f"$H_a = {H_val}$")
+                text_lines.append(f"$\\mu_B H_a / |t| = {H_val}$")
 
             #text_lines.append(f"$U = {U}$")
-            text = "\n".join(text_lines)
-
+            #if plot_idx ==0:
+            text = "\n".join(text_lines)# if j == 0 else None
+            #if  j!=0:
+            #    text =f"$k_B T/|t| = {kBT_val:.3g}$"
             xlabel_map = {
                 "n": "band filling, n",
                 "k_BT": "temperature, $k_B T / |t|$",
-                "H_a": "magnetic field, $H_a$"
+                "H_a": "magnetic field, $\\mu_B H_a / |t|$"
             }
-
-            self._setup_axis(current_ax, xlabel=xlabel_map.get(x_param, x_param), ylabel=y_label,
+            shared_xlabel = xlabel_map.get(x_param,x_param)
+            self._setup_axis(current_ax, xlabel=None, ylabel=y_label,
                             text=text, text_pos=text_pos, xlims=xlims, ylims=ylims,
                             show_log_vals=show_log_vals, xscale=xscale,
                             show_legend=(j==0))
-
+            fig.supxlabel(shared_xlabel, fontsize=self.config.fontsize)
+            plt.tight_layout()
     def plot_3d_results(self,
         results: pd.DataFrame,
         row_param: str,
