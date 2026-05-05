@@ -152,10 +152,6 @@ if(NOT TARGET qss_library)
   add_subdirectory(src)
 endif()
 
-# 2. Command-line application (qss_cli)
-if(NOT TARGET qss_cli)
-  add_subdirectory(app)
-endif()
 
 # 3. Configured headers (version.hpp, config.hpp)
 if(EXISTS "${PROJECT_SOURCE_DIR}/configured")

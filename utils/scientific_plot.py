@@ -15,6 +15,7 @@ DIST_COLORS = {
     "NFL": "purple",
     "NFLB": "green",
     "SSL": "black",
+    "HUBBARD": "darkorange",
 }
 
 DIST_LINESTYLES = {
@@ -23,6 +24,7 @@ DIST_LINESTYLES = {
     "NFL": "-.",
     "NFLB": ":",
     "SSL": (0, (3, 1, 1, 1)), # Dotted dash
+    "HUBBARD": (0, (5, 1)),
 }
 
 def _setup_axis(ax, text: Optional[str] = None, text_pos: Tuple[float, float] = (0.025, 0.985),
@@ -95,7 +97,7 @@ def _calculate_mu(e_k: np.ndarray, distro: str, n: float, beta: float, H: float,
     df_mu = chemical_potential(
         distros=[distro],
         n_vals=[n],
-        beta_vals=[beta],
+        kBT_vals=[beta],
         H_a_vals=[H],
         E=e_k,
         N=N,
@@ -513,7 +515,8 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 text_pos: Tuple[float,float]=(0.025, .985), xlims: Optional[Tuple[float, float]] = None,
                 ylims: Optional[Tuple[float, float]] = None, t_prim: float = 0.25,
                 ticks_len: int = 8, ticks_width: int=3, figsize: Tuple[int,int] = (12,6),
-                ssl_theory:list = [], blue_line: bool = False, N: int = 100) -> None:
+                ssl_theory:list = [], blue_line: bool = False, N: int = 100,
+                text_on_plot: bool = True) -> None:
 
     """Plot entropy as a function of density.
 
@@ -570,7 +573,8 @@ def plot_result_n(results: pd.DataFrame, n: Union[List[float], np.ndarray],
         text =f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$k_B T/|t| = {1/beta:.2e}$"
 
         legend_arg = legend and (not only_one_legend or j == 0)
-        _setup_axis(ax_flat[j], text, text_pos, "band filling, n", y_label,
+        panel_text = text if text_on_plot else None
+        _setup_axis(ax_flat[j], panel_text, text_pos, "band filling, n", y_label,
                     fontsize, ticks_len, ticks_width, legend_arg, legend_position,
                     xlims, ylims, show_log_vals)
 
@@ -582,7 +586,7 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
                 text_pos: Tuple[float,float]=(0.025, .985), xlims: Optional[Tuple[float, float]] = None,
                 ylims: Optional[Tuple[float, float]] = None,t_prim: float = 0.25,
                 fontsize:int = 10 ,ticks_len: int = 8, ticks_width: int=3, blue_line: bool = False,
-                N: int = 100) -> None:
+                N: int = 100, text_on_plot: bool = True) -> None:
 
     """Plot entropy as a function of density.
 
@@ -632,7 +636,8 @@ def plot_results_temperature(results: pd.DataFrame, n: Union[List[float], np.nda
         text =f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$ n = {n_i}$"
 
         legend_arg = legend and (not only_one_legend or j == 0)
-        _setup_axis(ax_flat[j], text, text_pos, "temperature $k_B  T / |t|$", y_label,
+        panel_text = text if text_on_plot else None
+        _setup_axis(ax_flat[j], panel_text, text_pos, "temperature $k_B  T / |t|$", y_label,
                     fontsize, ticks_len, ticks_width, legend_arg, legend_position,
                     xlims, ylims, show_log_vals, xscale="log")
 
@@ -644,7 +649,7 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
                 text_pos: Tuple[float,float]=(0.025, .985), xlims: Optional[Tuple[float, float]] = None,
                 ylims: Optional[Tuple[float, float]] = None,t_prim: float = 0.25,
                 fontsize:int = 10 ,ticks_len: int = 8, ticks_width: int=3, blue_line: bool = False,
-                N: int = 100) -> None:
+                N: int = 100, text_on_plot: bool = True) -> None:
 
     """Plot variable as a function of magnetic field H_a.
 
@@ -697,7 +702,8 @@ def plot_results_Ha(results: pd.DataFrame, n: Union[List[float], np.ndarray],
         text =f"$t = -1$\n$t' / |t| = {t_prim}$\n$N = {N} \\times {N}$\n$ n = {n_i}$\n$k_B T/|t| = {k_BT:.2e}$"
 
         legend_arg = legend and (not only_one_legend or j == 0)
-        _setup_axis(ax_flat[j], text, text_pos, "magnetic field $H_a$", y_label,
+        panel_text = text if text_on_plot else None
+        _setup_axis(ax_flat[j], panel_text, text_pos, "magnetic field $H_a$", y_label,
                     fontsize, ticks_len, ticks_width, legend_arg, legend_position,
                     xlims, ylims, show_log_vals, xscale="log", spine_width=1.7)
 

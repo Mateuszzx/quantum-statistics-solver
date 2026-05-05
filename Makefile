@@ -166,9 +166,9 @@ test-python: venv ## Run Python tests with pytest
 ## GUI
 # ==============================================================================
 
-gui: ## Launch the GUI application
+gui-launch: ## Launch the GUI application
 	@echo "[info] Launching Quantum Statistics Solver GUI"
-	@streamlit run ./app/BO/gui/web_app.py
+	@streamlit run ./gui/web_app.py
 # ==============================================================================
 ## Code Coverage
 # ==============================================================================
