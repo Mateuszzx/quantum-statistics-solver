@@ -221,7 +221,7 @@ class SimulatedAnnealingOptions:
 
     step_sigma: float = 0.2
     step_decay: float = 0.99
-    scale_sigma_by_T: bool = True  # noqa: N815
+    scale_sigma_by_T: bool = True
 
     bounds: list[tuple[float, float]] = field(default_factory=lambda: [(-10.0, 10.0)])
     reflect_bounds: bool = True

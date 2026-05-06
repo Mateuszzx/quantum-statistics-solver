@@ -11,32 +11,33 @@ Run from the ``quantum-statistics-solver`` directory::
 from __future__ import annotations
 
 import traceback
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 
+from gui.lattice import build_dispersion
+from gui.notebook_plots import load_scientific_plotter_v2, plot_distributions_notebook_style
+from gui.panel_plot import mu_for_point, panel_plot
+from gui.paths import quantum_statistics_solver_root
+from gui.solver_options import build_brent_options, build_sa_options
+from gui.streamlit_utils import show_current_figure, st_progress_pair
+from gui.sweep_grids import build_1d_sweep
 from qss.distributions import DistType, distribution
 from qss.energy import energy as compute_energy
 from qss.entropy import entropy as compute_entropy
 from qss.magnetization import calculate_magnetization
 from qss.nkd import n_kd as compute_nkd
 from qss.solver_options import CoolingSchedule
-
-from gui.panel_plot import mu_for_point, panel_plot
-from gui.lattice import build_dispersion
-from gui.notebook_plots import load_scientific_plotter_v2, plot_distributions_notebook_style
-from gui.paths import quantum_statistics_solver_root
-from gui.solver_options import build_brent_options, build_sa_options
-from gui.streamlit_utils import show_current_figure, st_progress_pair
-from gui.sweep_grids import build_1d_sweep
 from utils.experiment_utils import run_experiment
 
 st.set_page_config(page_title="Quantum Statistics Solver", layout="wide")
 
 SOLVER_ROOT = quantum_statistics_solver_root()
+
+DIM_2D = 2
+MIN_SWEEP_COUNT = 2
 
 DIST_MAP: dict[str, DistType] = {
     "FD": DistType.FD,
@@ -67,14 +68,20 @@ DERIVED_MAP: dict[str, tuple[str, str]] = {
 def _sidebar_distros() -> list[DistType]:
     st.sidebar.subheader("Distributions")
     names = list(DIST_MAP.keys())
-    picked = st.sidebar.multiselect("Select distributions", options=names, default=["FD", "NFL", "SSL"])
+    picked = st.sidebar.multiselect(
+        "Select distributions", options=names, default=["FD", "NFL", "SSL"]
+    )
     return [DIST_MAP[k] for k in picked]
 
 
 def _sidebar_lattice() -> tuple[str, int, float, float]:
     st.sidebar.subheader("Lattice")
     dim = st.sidebar.radio("Dimensionality", ["2D", "1D"], index=0, horizontal=True)
-    N = int(st.sidebar.number_input("N (k-grid per axis)", min_value=10, max_value=4096, value=100, step=10))
+    N = int(
+        st.sidebar.number_input(
+            "N (k-grid per axis)", min_value=10, max_value=4096, value=100, step=10
+        )
+    )
     t = float(st.sidebar.number_input("t (NN hopping)", value=-1.0))
     t_prim = float(st.sidebar.number_input("t' (NNN hopping)", value=0.0))
     return dim, N, t, t_prim
@@ -95,7 +102,9 @@ def _sidebar_sweeps() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     k_count = int(st.sidebar.number_input("$k_BT$ points", 1, 200, 4, key="kcn"))
     if k_mode == "log" and (k_min <= 0 or k_max <= 0):
         st.sidebar.error("Log $k_BT$ sweep needs positive min and max.")
-    kBT_vals = build_1d_sweep(k_min, k_max, max(2, k_count), "linear" if k_mode == "linear" else "log")
+    kBT_vals = build_1d_sweep(
+        k_min, k_max, max(2, k_count), "linear" if k_mode == "linear" else "log"
+    )
 
     st.sidebar.markdown(r"$$H_a\ \mathrm{(T)}$$")
     h_mode = st.sidebar.radio("$H_a$ spacing", ["linear", "log"], horizontal=True, key="hm")
@@ -103,7 +112,7 @@ def _sidebar_sweeps() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     h_min = float(h1.number_input("$H_a$ min", value=0.0, format="%.1e", key="hmin"))
     h_max = float(h2.number_input("$H_a$ max", value=0.0, key="hmax"))
     h_count = int(st.sidebar.number_input("$H_a$ points", 1, 200, 1, key="hcn"))
-    if h_mode == "log" and h_count >= 2 and (h_min <= 0 or h_max <= 0):
+    if h_mode == "log" and h_count >= MIN_SWEEP_COUNT and (h_min <= 0 or h_max <= 0):
         st.sidebar.error("Log H_a sweep needs strictly positive min and max.")
     H_a_vals = build_1d_sweep(h_min, h_max, h_count, "linear" if h_mode == "linear" else "log")
 
@@ -139,7 +148,9 @@ def _solver_controls(container: object) -> tuple[str, object | None, float, floa
             stall_iters = container.number_input("Stall iterations", value=1000, key="sa_stall")
             T0 = container.number_input("T0", value=1000.0, key="sa_T0")
             T_min = container.number_input("T_min", value=1e-9, format="%.1e", key="sa_Tmin")
-            alpha = container.number_input("alpha", value=0.999, min_value=1e-6, max_value=1.0, key="sa_alpha")
+            alpha = container.number_input(
+                "alpha", value=0.999, min_value=1e-6, max_value=1.0, key="sa_alpha"
+            )
             step_decay = container.number_input(
                 "step_decay", value=0.999, min_value=1e-6, max_value=1.0, key="sa_step_decay"
             )
@@ -202,8 +213,16 @@ def _df_for_quantity(*, quantity_name: str) -> tuple[pd.DataFrame, str, str]:
 def _plot_style_controls() -> dict[str, object]:
     st.subheader("Plot customization")
     c1, c2, c3 = st.columns(3)
-    fig_w = float(c1.number_input("Figure width (per panel)", min_value=4.0, max_value=24.0, value=10.0, step=0.5))
-    fig_h = float(c2.number_input("Figure height (per panel)", min_value=3.0, max_value=14.0, value=6.0, step=0.5))
+    fig_w = float(
+        c1.number_input(
+            "Figure width (per panel)", min_value=4.0, max_value=24.0, value=10.0, step=0.5
+        )
+    )
+    fig_h = float(
+        c2.number_input(
+            "Figure height (per panel)", min_value=3.0, max_value=14.0, value=6.0, step=0.5
+        )
+    )
     cols = int(c3.number_input("Panels per row", min_value=1, max_value=8, value=2, step=1))
 
     xl_enabled = st.checkbox("Set X axis limits", value=False)
@@ -236,7 +255,7 @@ def _plot_style_controls() -> dict[str, object]:
     }
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0912, PLR0915
     st.title("Quantum statistics solver")
     st.caption(
         "Notebook-equivalent sweeps over band filling, temperature, and field — "
@@ -313,7 +332,7 @@ def main() -> None:
                 st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k, U=U)
                 st.session_state["nkd_df"] = compute_nkd(mu_df, e_k, U=U)
             st.success("Finished.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             prog_ph.empty()
             st.error(str(e))
             st.code(traceback.format_exc())
@@ -348,80 +367,84 @@ def main() -> None:
 
     tab_panels, tab_dist = st.tabs(["Panels", "Distributions"])
 
-    with tab_panels:
-        with st.expander("Panels", expanded=True):
-            q_name = st.selectbox("Quantity", options=list(DERIVED_MAP.keys()), index=0, key="panel_qty")
-            x_var = st.selectbox("X axis variable", options=["n", "k_BT", "H_a"], index=0, key="panel_x")
-            x_scale = st.radio("X scale", ["linear", "log"], horizontal=True, index=0, key="panel_xscale")
-            panel_var_raw = st.selectbox(
-                "Sweep in panels", options=["(none)", "k_BT", "H_a"], index=1, key="panel_pan"
-            )
-            panel_var = None if panel_var_raw == "(none)" else str(panel_var_raw)
-            if panel_var == x_var:
-                st.warning("Panel variable must be different from X axis. Switching panels to (none).")
-                panel_var = None
+    with tab_panels, st.expander("Panels", expanded=True):
+        q_name = st.selectbox(
+            "Quantity", options=list(DERIVED_MAP.keys()), index=0, key="panel_qty"
+        )
+        x_var = st.selectbox(
+            "X axis variable", options=["n", "k_BT", "H_a"], index=0, key="panel_x"
+        )
+        x_scale = st.radio(
+            "X scale", ["linear", "log"], horizontal=True, index=0, key="panel_xscale"
+        )
+        panel_var_raw = st.selectbox(
+            "Sweep in panels", options=["(none)", "k_BT", "H_a"], index=1, key="panel_pan"
+        )
+        panel_var = None if panel_var_raw == "(none)" else str(panel_var_raw)
+        if panel_var == x_var:
+            st.warning("Panel variable must be different from X axis. Switching panels to (none).")
+            panel_var = None
 
-            n_cols = int(style["cols"])
+        n_cols = int(style["cols"])
 
-            fixed: dict[str, float] = {}
-            for var, opts in (("n", n_arr), ("k_BT", kBT_arr), ("H_a", H_arr)):
-                if var == x_var or var == panel_var:
-                    continue
-                vals = list(np.array(opts, dtype=float))
-                if not vals:
-                    continue
-                default_val = float(vals[0])
-                fixed[var] = float(
-                    st.selectbox(
-                        f"Fixed ${var}$",
-                        options=vals,
-                        index=int(np.argmin(np.abs(np.array(vals, dtype=float) - default_val))),
-                        format_func=lambda x: f"{float(x):.6g}",
-                        key=f"panel_fix_{var}",
-                    )
+        fixed: dict[str, float] = {}
+        for var, opts in (("n", n_arr), ("k_BT", kBT_arr), ("H_a", H_arr)):
+            if var in (x_var, panel_var):
+                continue
+            vals = list(np.array(opts, dtype=float))
+            if not vals:
+                continue
+            default_val = float(vals[0])
+            fixed[var] = float(
+                st.selectbox(
+                    f"Fixed ${var}$",
+                    options=vals,
+                    index=int(np.argmin(np.abs(np.array(vals, dtype=float) - default_val))),
+                    format_func=lambda x: f"{float(x):.6g}",
+                    key=f"panel_fix_{var}",
                 )
-
-            dfq, y_col, y_label = _df_for_quantity(quantity_name=str(q_name))
-            panel_plot(
-                dfq,
-                y_col=y_col,
-                y_label=y_label,
-                x_var=str(x_var),
-                x_scale=str(x_scale),
-                panel_var=panel_var,
-                n_cols=n_cols,
-                fixed=fixed,
-                distros=distros,
-                style=style,
-            )
-            show_current_figure(st)
-            fixed_str = ", ".join([f"{k}={v:.6g}" for k, v in fixed.items()]) if fixed else "(none)"
-            var_inline = {"n": r"$n$", "k_BT": r"$k_B T/|t|$", "H_a": r"$H_a$"}
-            fixed_md = ", ".join(
-                [f"{var_inline.get(k, k)}={v:.6g}" for k, v in fixed.items()]
-            ) or "(none)"
-            x_md = var_inline.get(str(x_var), str(x_var))
-            pan_md = var_inline.get(str(panel_var_raw), "none") if panel_var_raw != "(none)" else "none"
-            st.markdown(
-                f"**Quantity**: {q_name}  \n"
-                f"**X**: {x_md} ({x_scale})  \n"
-                f"**Panels**: {pan_md}  \n"
-                f"**Fixed**: {fixed_md}"
             )
 
-            with st.expander("Data (table + download)", expanded=False):
-                st.dataframe(dfq.reset_index())
-                st.download_button(
-                    f"Download {y_col} CSV",
-                    dfq.reset_index().to_csv(index=False).encode("utf-8"),
-                    f"gui_{y_col}.csv",
-                    "text/csv",
-                )
+        dfq, y_col, y_label = _df_for_quantity(quantity_name=str(q_name))
+        panel_plot(
+            dfq,
+            y_col=y_col,
+            y_label=y_label,
+            x_var=str(x_var),
+            x_scale=str(x_scale),
+            panel_var=panel_var,
+            n_cols=n_cols,
+            fixed=fixed,
+            distros=distros,
+            style=style,
+        )
+        show_current_figure(st)
+        var_inline = {"n": r"$n$", "k_BT": r"$k_B T/|t|$", "H_a": r"$H_a$"}
+        fixed_md = (
+            ", ".join([f"{var_inline.get(k, k)}={v:.6g}" for k, v in fixed.items()]) or "(none)"
+        )
+        x_md = var_inline.get(str(x_var), str(x_var))
+        pan_md = var_inline.get(str(panel_var_raw), "none") if panel_var_raw != "(none)" else "none"
+        st.markdown(
+            f"**Quantity**: {q_name}  \n"
+            f"**X**: {x_md} ({x_scale})  \n"
+            f"**Panels**: {pan_md}  \n"
+            f"**Fixed**: {fixed_md}"
+        )
+
+        with st.expander("Data (table + download)", expanded=False):
+            st.dataframe(dfq.reset_index())
+            st.download_button(
+                f"Download {y_col} CSV",
+                dfq.reset_index().to_csv(index=False).encode("utf-8"),
+                f"gui_{y_col}.csv",
+                "text/csv",
+            )
 
     with tab_dist:
         st.subheader("BZ occupancy")
-        PlotterCls = load_scientific_plotter_v2()
-        if PlotterCls is None:
+        plotterCls = load_scientific_plotter_v2()
+        if plotterCls is None:
             st.warning(
                 "Advanced cuts need the parent **qss-results** checkout with `tools/scientific_plot_v2.py` "
                 "next to this submodule (same layout as the Jupyter notebooks)."
@@ -465,7 +488,7 @@ def main() -> None:
                 ax.set_xlabel(r"$k_x$")
                 ax.set_ylabel(r"$k_y$")
             else:
-                ax.plot(kx, np.diag(occ) if occ.ndim == 2 else occ, lw=2)
+                ax.plot(kx, np.diag(occ) if occ.ndim == DIM_2D else occ, lw=2)
                 ax.set_xlabel(r"$k$")
                 ax.set_ylabel("occupancy")
             ax.set_title(str(d0))
@@ -474,23 +497,37 @@ def main() -> None:
             slice_type = st.selectbox("1D cut", ["horizontal", "diagonal"], index=0)
             n_opts = list(n_arr.astype(float))
             k_opts = list(kBT_arr.astype(float))
-            n_pick = st.multiselect("n values", options=n_opts, default=n_opts[: min(3, len(n_opts))])
-            k_pick = st.multiselect("$k_BT$ values", options=k_opts, default=k_opts[: min(2, len(k_opts))])
+            n_pick = st.multiselect(
+                "n values", options=n_opts, default=n_opts[: min(3, len(n_opts))]
+            )
+            k_pick = st.multiselect(
+                "$k_BT$ values", options=k_opts, default=k_opts[: min(2, len(k_opts))]
+            )
             if not n_pick or not k_pick:
                 st.error("Select at least one value for **n** and for **$k_BT$**.")
             else:
                 H_plot = float(st.selectbox("H_a for plot", list(H_arr.astype(float))))
-                n_kd_flag = st.checkbox("n_kd channel / correlator view (Hubbard tooling)", value=False)
+                n_kd_flag = st.checkbox(
+                    "n_kd channel / correlator view (Hubbard tooling)", value=False
+                )
                 y0, y1 = st.slider("y axis (occupancy)", -0.05, 2.2, (-0.05, 2.2))
-                fig_w = st.slider("Figure width (1D)", 28, 48, int(max(10, style["figsize"][0] * 3.8)))
-                fig_h = st.slider("Figure height (1D)", 2, 8, int(max(4, style["figsize"][1])*0.8))
-                fig2_w = st.slider("Figure width (2D)", 15, 25, int(max(8, style["figsize"][0] * 2.0)))
-                fig2_h = st.slider("Figure height (2D)", 5, 15, int(max(4, style["figsize"][1])*10/6))
+                fig_w = st.slider(
+                    "Figure width (1D)", 28, 48, int(max(10, style["figsize"][0] * 3.8))
+                )
+                fig_h = st.slider(
+                    "Figure height (1D)", 2, 8, int(max(4, style["figsize"][1]) * 0.8)
+                )
+                fig2_w = st.slider(
+                    "Figure width (2D)", 15, 25, int(max(8, style["figsize"][0] * 2.0))
+                )
+                fig2_h = st.slider(
+                    "Figure height (2D)", 5, 15, int(max(4, style["figsize"][1]) * 10 / 6)
+                )
 
                 names = [d.name if hasattr(d, "name") else str(d) for d in distros]
                 plt.close("all")
                 plot_distributions_notebook_style(
-                    Plotter=PlotterCls,
+                    Plotter=plotterCls,
                     e_k=e_k,
                     kx=kx,
                     ky=ky if ky is not None else kx,
@@ -517,10 +554,14 @@ def main() -> None:
                 st.divider()
                 st.subheader("2D occupancy map (uses solved μ)")
                 mu_df = st.session_state["mu_df"]
-                distro_names = [d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros]
+                distro_names = [
+                    d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros
+                ]
                 d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
                 n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
-                k2 = float(st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k"))
+                k2 = float(
+                    st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k")
+                )
                 h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
                 mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2)
                 if mu_val is None:

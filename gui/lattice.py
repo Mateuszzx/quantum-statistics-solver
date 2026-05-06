@@ -33,4 +33,3 @@ def build_dispersion(
     e1 = 2.0 * float(t) * np.cos(kx) + 2.0 * float(t_prim) * np.cos(2.0 * kx)
     e_k = np.diag(e1.astype(np.float64))
     return e_k, kx, None
-

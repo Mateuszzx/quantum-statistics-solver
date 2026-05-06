@@ -2,23 +2,32 @@
 
 from __future__ import annotations
 
-import uuid
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Protocol
+import uuid
 
-import pandas as pd
 from numpy.typing import NDArray
+import pandas as pd
 from tqdm.auto import tqdm
 
 from qss.chemical_potential import chemical_potential
 from qss.distributions import DistType
 from qss.solver_options import CombinedSolverOptions, CoolingSchedule, brent_defaults, sa_defaults
 
-SolverOptsInput = CombinedSolverOptions | Any
+
+class _HasLogFile(Protocol):
+    log_file: str
 
 
-def _set_log_path(native_opts: Any, path: str) -> None:
+class _HasSA(Protocol):
+    sa: _HasLogFile
+
+
+SolverOptsInput = CombinedSolverOptions | _HasLogFile | _HasSA
+
+
+def _set_log_path(native_opts: SolverOptsInput, path: str) -> None:
     if hasattr(native_opts, "log_file"):
         native_opts.log_file = path
     elif hasattr(native_opts, "sa"):
@@ -55,7 +64,7 @@ def run_experiment(  # noqa: PLR0913
     kBT_vals: Sequence[float],
     h_a_vals: Sequence[float],
     distros: Sequence[DistType],
-    e_k: NDArray[Any],
+    e_k: NDArray[object],
     N: int = 100,
     solver: str = "SA",
     solver_opts: SolverOptsInput | None = None,
@@ -114,7 +123,7 @@ def run_experiment(  # noqa: PLR0913
                                 b0=float(b0),
                             )
                             results.append(res_df)
-                        except Exception as e:  # noqa: BLE001
+                        except Exception as e:
                             print(f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}\nDetails: {e}")
                         done += 1
                         pbar.update(1)

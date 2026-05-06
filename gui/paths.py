@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+import sys
 
 
 def quantum_statistics_solver_root() -> Path:
@@ -32,4 +32,3 @@ def ensure_qss_results_tools_on_path() -> Path | None:
     if s not in sys.path:
         sys.path.insert(0, s)
     return root
-

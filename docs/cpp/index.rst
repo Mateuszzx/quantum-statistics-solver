@@ -15,4 +15,3 @@ If Doxygen XML is available (see ``docs/Doxyfile`` and ``docs/conf.py``), the C+
    Doxygen XML was not detected. Rebuild docs with::
 
       make docs
-

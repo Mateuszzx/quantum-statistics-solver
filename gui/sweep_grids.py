@@ -9,6 +9,8 @@ from numpy.typing import NDArray
 
 SweepMode = Literal["linear", "log"]
 
+MIN_SWEEP_COUNT = 2
+
 
 def build_1d_sweep(
     vmin: float,
@@ -17,7 +19,7 @@ def build_1d_sweep(
     mode: SweepMode,
 ) -> NDArray[np.float64]:
     """Return ``count`` values from ``vmin`` to ``vmax`` (inclusive along the grid)."""
-    if int(count) < 2:
+    if int(count) < MIN_SWEEP_COUNT:
         return np.array([float(vmin)], dtype=np.float64)
     n = int(count)
     if mode == "linear":
@@ -26,4 +28,3 @@ def build_1d_sweep(
     if lo <= 0 or hi <= 0:
         raise ValueError("Log sweep requires strictly positive min and max.")
     return np.logspace(np.log10(lo), np.log10(hi), n, dtype=np.float64)
-

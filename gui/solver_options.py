@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from qss.solver_options import BracketerType, CombinedSolverOptions, CoolingSchedule, brent_defaults, sa_defaults
+from qss.solver_options import (
+    BracketerType,
+    CombinedSolverOptions,
+    CoolingSchedule,
+    brent_defaults,
+    sa_defaults,
+)
 
 
-def build_sa_options(
+def build_sa_options(  # noqa: PLR0913
     *,
     max_iters: int,
     min_iters: int,
@@ -22,7 +28,7 @@ def build_sa_options(
     reflect_bounds: bool,
 ) -> CombinedSolverOptions:
     """Return the Python-side options object (``chemical_potential`` calls ``to_qss()`` internally)."""
-    py = sa_defaults(
+    return sa_defaults(
         T0=float(T0),
         T_min=float(T_min),
         alpha=float(alpha),
@@ -36,10 +42,9 @@ def build_sa_options(
         reflect_bounds=bool(reflect_bounds),
         sched=sched,
     )
-    return py
 
 
-def build_brent_options(
+def build_brent_options(  # noqa: PLR0913
     *,
     abs_tol: float,
     rel_tol: float,
@@ -51,7 +56,7 @@ def build_brent_options(
 ) -> CombinedSolverOptions:
     """Return the Python-side options object."""
     br = BracketerType.Expansion if bracketer == "Expansion" else BracketerType.Bisection
-    py = brent_defaults(
+    return brent_defaults(
         abs_tol=float(abs_tol),
         rel_tol=float(rel_tol),
         max_iters=int(max_iters),
@@ -60,5 +65,3 @@ def build_brent_options(
         max_expands=int(max_expands),
         initial_step=float(initial_step),
     )
-    return py
-

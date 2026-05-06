@@ -7,7 +7,9 @@ import pandas as pd
 from qss.distributions import DistType
 
 
-def mu_for_point(mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float) -> float | None:
+def mu_for_point(
+    mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float
+) -> float | None:
     dff = mu_df.reset_index().copy()
     if "distro" in dff.columns:
         dff["distro"] = dff["distro"].astype(str).map(lambda s: s.split(".")[-1])
@@ -22,7 +24,7 @@ def mu_for_point(mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a:
     return float(m["mu"].iloc[0])
 
 
-def panel_plot(  # noqa: PLR0913
+def panel_plot(  # noqa: PLR0913, PLR0912, PLR0915
     df: pd.DataFrame,
     *,
     y_col: str,
@@ -99,7 +101,9 @@ def panel_plot(  # noqa: PLR0913
         "HUBBARD ($n_{kd}$)": ("brown", (0, (1, 1))),
     }
     fallback_colors = [plt.cm.tab10(i % 10) for i in range(max(1, len(distro_names)))]
-    fallback_map = {name: fallback_colors[i % len(fallback_colors)] for i, name in enumerate(distro_names)}
+    fallback_map = {
+        name: fallback_colors[i % len(fallback_colors)] for i, name in enumerate(distro_names)
+    }
 
     def _pretty(v: object) -> str:
         if isinstance(v, (float, np.floating, int, np.integer)):
@@ -161,4 +165,3 @@ def panel_plot(  # noqa: PLR0913
         fig.tight_layout(rect=(0, 0.05, 1, 1))
     else:
         fig.tight_layout()
-

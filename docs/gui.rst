@@ -51,4 +51,3 @@ The GUI writes the chemical-potential grid to::
    quantum-statistics-solver/data/gui_results.csv
 
 and provides download buttons for derived quantities from the active panel selection.
-
