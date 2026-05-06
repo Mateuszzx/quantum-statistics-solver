@@ -1,9 +1,5 @@
 # Quantum Statistics Solver
 
-[![CI](https://github.com/YOUR_USERNAME/quantum-statistics-solver/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/quantum-statistics-solver/actions)
-[![codecov](https://codecov.io/gh/YOUR_USERNAME/quantum-statistics-solver/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/quantum-statistics-solver)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 High-performance library for quantum statistics calculations, focusing on strongly correlated electron systems.
 
 ## Features
@@ -13,6 +9,46 @@ High-performance library for quantum statistics calculations, focusing on strong
 - **Solvers**: Robust root-finding (Brent's method) and global optimization (Simulated Annealing) for solving $\mu(n)$.
 - **Performance**: Core logic implemented in C++17 for speed, exposed to Python via `nanobind`.
 - **Visualization**: Built-in plotting tools for scientific publication-quality figures.
+
+## GUI (Streamlit)
+
+The repository includes an interactive GUI at `gui/web_app.py` that runs the same “notebook-style” sweeps over:
+
+- band filling \(n\)
+- temperature \(k_B T/|t|\)
+- magnetic field \(H_a\)
+
+and computes \(\mu\), \(S\), \(E\), \(F\), \(M\), and \(n_{kd}\).
+
+### Run
+
+From the `quantum-statistics-solver/` directory:
+
+```bash
+streamlit run gui/web_app.py
+```
+
+If you use the project `Makefile`, there may also be a helper target (e.g. `make gui-launch`).
+
+### What the GUI shows
+
+- **Panels tab**: pick the **quantity**, **x-axis variable**, **panel sweep variable**, and **fixed parameters**; plot styling supports:
+  - configurable panels-per-row and figure size
+  - optional x/y axis limits
+  - per-distribution colors/linestyles matching `tools/scientific_plot_v2.py`
+  - linear/log x-scale toggle
+- **Distributions tab**:
+  - notebook-style distribution cuts (when `tools/scientific_plot_v2.py` is available)
+  - a **2D occupancy heatmap** (2D lattice) computed using the **solved \(\mu\)** from results
+- **Solver parameters**: solver configuration is available in a collapsible section in the main window.
+
+### Output data
+
+The GUI writes the chemical potential solve grid to:
+
+- `data/gui_results.csv`
+
+and also provides download buttons for derived quantities in the Panels tab.
 
 ## Installation
 
@@ -66,20 +102,11 @@ print(df.head())
 
 ### Plotting
 
-Use the included scientific plotting tools:
+Use the included scientific plotting tools (see `tools/scientific_plot_v2.py` in the parent `qss-results` checkout):
 
 ```python
-import tools.scientific_plot as sp
 import matplotlib.pyplot as plt
 
-# Plot Entropy vs Temperature
-sp.plot_results_temperature(
-    results=df,
-    n=[0.5, 0.8],
-    betas=beta_vals,
-    y_label=r"$\mu$",
-    distros=["FD", "FLB"]
-)
 plt.show()
 ```
 
@@ -113,6 +140,43 @@ make coverage-all
 ```bash
 make check-all  # Runs linting, formatting, and type checking
 ```
+
+### Documentation
+
+#### Prerequisites (system packages)
+
+The documentation build uses:
+
+- **Sphinx** (installed into the project venv by `make docs`)
+- **Doxygen** + **Graphviz** (optional, for C++ API pages via Breathe)
+
+On Debian/Ubuntu, you can install the system dependencies with:
+
+```bash
+make install
+```
+
+or manually:
+
+```bash
+sudo apt-get install -y doxygen graphviz python3-venv python3-dev
+```
+
+LaTeX is **not required** (Doxygen formulas are rendered via MathJax in HTML).
+
+Build the Sphinx (and optional Doxygen) docs:
+
+```bash
+make docs
+```
+
+Serve the generated HTML on `http://localhost:8000`:
+
+```bash
+make docs-serve
+```
+
+Docs are written to `build/docs/html/index.html`.
 
 ## Project Structure
 

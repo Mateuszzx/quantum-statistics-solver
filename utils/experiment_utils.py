@@ -129,39 +129,3 @@ def run_experiment(  # noqa: PLR0913
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     final_df.to_csv(output_file)
     return final_df
-
-
-def run_sa_experiment(  # noqa: PLR0913
-    n_vals: Sequence[float],
-    kBT_vals: Sequence[float],
-    h_a_vals: Sequence[float],
-    distros: Sequence[DistType],
-    e_k: NDArray[Any],
-    N: int = 100,
-    solver_opts: SolverOptsInput | None = None,
-    logs_dir: str | Path = "logs",
-    output_file: str | Path = "chemical_potential_experiment_results.csv",
-    x0: float = 0.0,
-    a0: float = -10.0,
-    b0: float = 10.0,
-    U: float = 0.0,
-    progress: Callable[[int, int], None] | None = None,
-) -> pd.DataFrame:
-    """Same as :func:`run_experiment` with ``solver=\"SA\"`` and SA-oriented defaults."""
-    return run_experiment(
-        n_vals=n_vals,
-        kBT_vals=kBT_vals,
-        h_a_vals=h_a_vals,
-        distros=distros,
-        e_k=e_k,
-        N=N,
-        solver="SA",
-        solver_opts=solver_opts,
-        logs_dir=logs_dir,
-        output_file=output_file,
-        x0=x0,
-        a0=a0,
-        b0=b0,
-        U=U,
-        progress=progress,
-    )

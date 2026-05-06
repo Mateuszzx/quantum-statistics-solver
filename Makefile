@@ -327,12 +327,11 @@ precommit-ci: venv ## Run pre-commit in CI mode (fail on errors)
 ## Documentation
 # ==============================================================================
 
-docs: venv ## Build all documentation (Sphinx + Doxygen)
+docs: ## Build all documentation (Sphinx + Doxygen)
 	@echo "[info] Building documentation"
 	@mkdir -p "$(BUILD_DIR)/docs"
 	@echo "[info] Installing documentation dependencies"
-	@$(PIP) install -q -r docs/requirements.txt || true
-	@$(PIP) install -q -e ".[docs]" || true
+	@$(PIP) install -q -r docs/requirements.txt
 	@if [ -f docs/Doxyfile ]; then \
         doxygen docs/Doxyfile; \
     fi
@@ -341,7 +340,7 @@ docs: venv ## Build all documentation (Sphinx + Doxygen)
 
 docs-serve: docs ## Serve documentation locally (http://localhost:8000)
 	@echo "[info] Serving documentation at http://localhost:8000"
-	@cd "$(DOCS_HTML)" && $(PYTHON) -m http.server 8000
+	@cd "$(DOCS_HTML)" && "$(abspath $(PYTHON))" -m http.server 8000
 
 docs-clean: ## Clean documentation build artifacts
 	@echo "[info] Cleaning documentation"
