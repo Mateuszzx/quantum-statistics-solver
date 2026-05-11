@@ -133,7 +133,8 @@ class TestChemicalPotential:
     @patch("qss.chemical_potential._qss.chemical_potential_B_multi_n")
     def test_chemical_potential_custom_N(self, mock_calc):
         mock_calc.return_value = [(0.0, 0, True, 0.0)]
-        E = np.zeros((2, 2))
+        N = 100
+        E = np.zeros((N, N))
 
         chemical_potential(
             distros="FD",
@@ -141,12 +142,24 @@ class TestChemicalPotential:
             kBT_vals=[1.0],
             H_a_vals=[0.0],
             E=E,
-            N=100 # Custom system size
+            N=N # Custom system size
         )
 
         # Verify N was passed correctly (4th argument)
         args, _ = mock_calc.call_args
-        assert args[3] == 100
+        assert args[3] == N
+
+    def test_chemical_potential_N_must_match_E_shape(self):
+        E = np.zeros((2, 2))
+        with pytest.raises(ValueError, match="does not match N=100"):
+            chemical_potential(
+                distros="FD",
+                n_vals=[0.5],
+                kBT_vals=[1.0],
+                H_a_vals=[0.0],
+                E=E,
+                N=100,
+            )
 
     def test_chemical_potential_invalid_distro(self):
         E = np.zeros((2, 2))

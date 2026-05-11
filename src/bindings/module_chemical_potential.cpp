@@ -80,7 +80,11 @@ void bind_chemical_potential(nb::module_ &m) {
            double a0,
            double b0,
            double x0) {
-            auto Em = numpy_to_mat_safe(E, static_cast<size_t>(N));
+            const auto nx = static_cast<size_t>(N);
+            if (E.shape(0) != nx || E.shape(1) != nx)
+                throw std::invalid_argument("E shape mismatch");
+
+            auto Em = numpy_to_mat_safe(E, nx);
             const auto results = qss::chemical_potential_B_multi_n(
                 dist,
                 kBT,
