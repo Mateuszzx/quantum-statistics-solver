@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 try:
-    from . import _qss  # type: ignore[attr-defined]
+    from . import _qss
 except ImportError as e:
     raise ImportError("The _qss extension module is not available.") from e
 
@@ -92,10 +92,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
         raise ValueError("E must be a square 2D array")
     N_eff = int(N) if N is not None else int(E.shape[0])
     if E.shape != (N_eff, N_eff):
-        raise ValueError(
-            f"E shape {E.shape} does not match N={N_eff}; "
-            "expected E.shape == (N, N)."
-        )
+        raise ValueError(f"E shape {E.shape} does not match N={N_eff}; expected E.shape == (N, N).")
 
     # Normalize solver options
     if solver_opts is None:
