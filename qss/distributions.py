@@ -19,7 +19,7 @@ LatticeData = NDArray[np.floating] | float | int
 
 
 try:
-    from . import _qss
+    from . import _qss  # type: ignore[attr-defined, unused-ignore]
 except ImportError as e:
     raise ImportError("The _qss extension module is not available.") from e
 
