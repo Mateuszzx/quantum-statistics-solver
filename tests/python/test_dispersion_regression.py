@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from qss.chemical_potential import chemical_potential
-from qss.distributions import DistType, prepare_2D_lattice_data
+from qss.distributions import DistType, distribution, prepare_2D_lattice_data
 from qss.solver_options import brent_defaults
 
 
@@ -32,3 +32,45 @@ def test_fd_mu_with_correct_t_prime_dispersion_reference_case():
     row = mu_df.reset_index().iloc[0]
     assert row["converged"]
     assert row["mu"] == pytest.approx(-0.9761154651641846, abs=1e-6)
+
+
+def test_nfl_stationary_solution_reference_occupancy():
+    """Regression test for the corrected NFL stationary solution."""
+    n_sigma = distribution(
+        np.array([0.0]),
+        mu=0.0,
+        kBT=1.0,
+        delta=0.0,
+        spin_shift=1,
+        dist_type=DistType.NFL,
+    )[0]
+
+    assert n_sigma == pytest.approx(0.276393202250021, abs=1e-12)
+
+
+def test_nfl_mu_with_stationary_solution_reference_case():
+    """Regression test for NFL after replacing the old algebraic kernel."""
+    N = 100
+    t = -1.0
+    t_prim = 0.25
+    kx = np.linspace(-np.pi, np.pi, N, endpoint=False)
+    ky = np.linspace(-np.pi, np.pi, N, endpoint=False)
+
+    e_k, _, _ = prepare_2D_lattice_data(kx, ky, t=t, t_prim=t_prim)
+
+    mu_df = chemical_potential(
+        distros=[DistType.NFL],
+        n_vals=[0.8],
+        kBT_vals=[0.01],
+        H_a_vals=[0.0],
+        N=N,
+        E=e_k,
+        solver_opts=brent_defaults(),
+        x0=-1.0,
+        a0=-5.0,
+        b0=5.0,
+    )
+
+    row = mu_df.reset_index().iloc[0]
+    assert row["converged"]
+    assert row["mu"] == pytest.approx(1.949689340283009, abs=1e-6)

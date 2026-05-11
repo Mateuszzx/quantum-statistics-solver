@@ -1,173 +1,106 @@
 /**
  * @file nfl.cpp
- * @brief Implementation of the Non-Fermi-Liquid distribution.
+ * @brief Stable implementation of the Non-Fermi-Liquid distribution.
+ *
+ * Implements the stationary solution derived from
+ *
+ *   (1 - n_k)^2 / [n_{k sigma} (1 - n_{k sigma})]
+ *     = exp[beta (eps_k - mu_sigma)]
+ *
+ * with spin competition through n_k = n_{k up} + n_{k down} <= 1.
  */
 
 #include "qss/distributions.hpp"
 #include "qss/types.hpp"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace qss::detail
 {
 
 namespace
 {
-/**
- * @brief Core calculation for Non-Fermi-Liquid distribution.
- *
- * Computes \f$ f(x) = \frac{1/2} + e^-x - 0.5* \sqrt{1 + \frac{4}{e^{-x} e{-x_prim}}}\f$ where \f$ x = \beta(E - \mu) \f$.
- * This distribution arises in certain spin liquid models.
- *
- * @param x Scaled energy difference \f$ \beta(E - \mu) \f$.
- * @return double Distribution value in [0, 0.5].
- */
-inline double nfl_from_x(double x, double x_prim) noexcept
+constexpr double LOG_2 = 0.693147180559945309417232121458176568;
+constexpr double LOG_4 = 2.0 * LOG_2;
+constexpr double LOG_DBL_MIN = -708.396418532264106224411228130256452;
+
+inline double log1p_exp(double x) noexcept
 {
-    if (x > UP_EXP_LIMIT)
+    if (x == -std::numeric_limits<double>::infinity())
         return 0.0;
-    const double ex_prim = std::exp(x_prim);
-    if (x < DOWN_EXP_LIMIT)
-        return std::clamp(0.5 +  1e8 * (1-ex_prim)/(1+std::sqrt(ex_prim)), 0.0, 1.0);
 
-    const double ex = std::exp(-x);
+    if (x > 0.0)
+        return x + std::log1p(std::exp(-x));
 
-
-    return std::clamp(ex +  0.5 - std::sqrt(ex_prim * ex* ex + 0.25), 0.0, 1.0);
+    return std::log1p(std::exp(x));
 }
-/**
- * @brief Core calculation for Non-Fermi-Liquid distribution (algebraic closed form).
- *
- * This implements the MathML solution using auxiliary quantities σ1..σ4.
- *
- * Mapping vs. existing variables:
- *   - MathML uses x, δ (polynomial form)
- *   - Here we set:
- *       x_m = exp(-x)              (same as previous `ex`)
- *       δ_m = exp(x_prim / 2)      so that δ_m^2 = exp(x_prim) (previous `ex_prim`)
- *
- * The MathML yields two algebraic branches (using σ3 and σ2). We select the
- * physically admissible value in [0, 1] when possible.
- */
-// inline double nfl_from_x(double x, double x_prim) noexcept
-// {
-//     if (x > UP_EXP_LIMIT)
-//         return 0.0;
 
-//     // Keep your asymptotic guard (unchanged) for extremely negative x.
-//     const double ex_prim = std::exp(x_prim);
-//     if (x < DOWN_EXP_LIMIT)
-//         return std::clamp(0.5 + 1e8 * (1 - ex_prim) / (1 + std::sqrt(ex_prim)), 0.0, 1.0);
+inline double log_cosh(double x) noexcept
+{
+    const double ax = std::abs(x);
 
-//     // --- Map to MathML variables ---
-//     const double x_m = std::exp(x);            // x in the MathML-polynomial form
-//     const double d_m = std::exp(0.5 * x_prim);  // δ in the MathML-polynomial form
+    if (ax < 20.0)
+        return std::log(std::cosh(x));
 
-//     // Helper lambdas for powers (avoids repeated pow()).
-//     const double d2 = d_m * d_m;
-//     const double d3 = d2 * d_m;
-//     const double d4 = d2 * d2;
-//     const double x2 = x_m * x_m;
+    return ax - LOG_2 + std::log1p(std::exp(-2.0 * ax));
+}
 
-//     // Denominator common term: (-δ^2 + x δ + 1)
-//     const double denom = (-d2 + x_m * d_m + 1.0);
+inline double log_sinh_abs(double x) noexcept
+{
+    const double ax = std::abs(x);
 
-//     // If denom is ~0, fall back to your previous stable expression.
-//     // (This prevents blow-ups on rare pathological parameter combinations.)
-//     if (std::abs(denom) < 1e-15)
-//     {
-//         const double ex = x_m;
-//         return std::clamp(ex + 0.5 - std::sqrt(ex_prim * ex * ex + 0.25), 0.0, 1.0);
-//     }
+    if (ax == 0.0)
+        return -std::numeric_limits<double>::infinity();
 
-//     // σ4 = sqrt( (δ x - 2δ + δ^2 + 1) * (2δ + δ x + δ^2 + 1) )
-//     const double s4_arg1 = (d_m * x_m - 2.0 * d_m + d2 + 1.0);
-//     const double s4_arg2 = (2.0 * d_m + d_m * x_m + d2 + 1.0);
-//     double sigma4_arg = s4_arg1 * s4_arg2;
+    if (ax < 20.0)
+        return std::log(std::sinh(ax));
 
-//     // Numerical safety: tiny negative from rounding -> clamp to 0.
-//     if (sigma4_arg < 0.0 && sigma4_arg > -1e-15)
-//         sigma4_arg = 0.0;
+    return ax - LOG_2 + std::log1p(-std::exp(-2.0 * ax));
+}
 
-//     // If genuinely negative, fall back.
-//     if (sigma4_arg < 0.0)
-//     {
-//         const double ex = x_m;
-//         return std::clamp(ex + 0.5 - std::sqrt(ex_prim * ex * ex + 0.25), 0.0, 1.0);
-//     }
+inline double nfl_from_stationary_solution(double e_k,
+                                           double mu,
+                                           double kBT,
+                                           double delta,
+                                           int spin_shift) noexcept
+{
+    if (!(kBT > 0.0) || !std::isfinite(kBT))
+        return std::numeric_limits<double>::quiet_NaN();
 
-//     const double sigma4 = std::sqrt(sigma4_arg);
+    const double s = static_cast<double>(spin_shift);
+    const double a = (mu - e_k) / kBT;
+    const double d = -(s * delta) / kBT;
+    const double half_d = 0.5 * d;
 
-//     // σ1 = 2 * (δ^4 + 2 δ^3 x + δ^2 x^2 - 2 δ^2 + 2 δ x + 1)
-//     const double sigma1 =
-//         2.0 * (d4 + 2.0 * d3 * x_m + d2 * x2 - 2.0 * d2 + 2.0 * d_m * x_m + 1.0);
+    const double log_u = LOG_4 + a + 2.0 * log_sinh_abs(half_d);
+    const double log_v = LOG_4 + a + 2.0 * log_cosh(half_d);
 
-//     // If σ1 is ~0, fall back.
-//     if (std::abs(sigma1) < 1e-15)
-//     {
-//         const double ex = x_m;
-//         return std::clamp(ex + 0.5 - std::sqrt(ex_prim * ex * ex + 0.25), 0.0, 1.0);
-//     }
+    const double log_1pu = log1p_exp(log_u);
+    const double log_1pv = log1p_exp(log_v);
 
-//     // σ2 = δ^2 σ4 - σ4 + 2 δ x + 2 δ^3 x - 2 δ^2 + δ^4 + δ^2 x^2 - δ x σ4 + 1
-//     const double sigma2 =
-//         d2 * sigma4 - sigma4
-//         + 2.0 * d_m * x_m + 2.0 * d3 * x_m
-//         - 2.0 * d2 + d4 + d2 * x2
-//         - d_m * x_m * sigma4
-//         + 1.0;
+    const double log_w = -0.5 * (log_1pu + log_1pv);
+    const double w = (log_w < LOG_DBL_MIN) ? 0.0 : std::exp(log_w);
 
-//     // σ3 = σ4 - δ^2 σ4 + 2 δ x + 2 δ^3 x - 2 δ^2 + δ^4 + δ^2 x^2 + δ x σ4 + 1
-//     const double sigma3 =
-//         sigma4 - d2 * sigma4
-//         + 2.0 * d_m * x_m + 2.0 * d3 * x_m
-//         - 2.0 * d2 + d4 + d2 * x2
-//         + d_m * x_m * sigma4
-//         + 1.0;
+    double q = 0.0;
+    if (d != 0.0)
+    {
+        const double log_gu = log_u - log_1pu;
+        const double log_gv = log_v - log_1pv;
+        const double log_q_abs = 0.5 * (log_gu + log_gv);
+        const double q_abs = (log_q_abs < LOG_DBL_MIN) ? 0.0 : std::exp(log_q_abs);
+        q = std::copysign(q_abs, d);
+    }
 
-//     // Branch formula pattern:
-//     // ( (δ^2 * σk)/σ1 - δ^2 - (σk/σ1) + (δ x σk)/σ1 + 1 ) / ( -δ^2 + x δ + 1 )
-//     const auto branch_value = [&](double sigmak) -> double {
-//         const double sig_over_s1 = sigmak / sigma1;
-//         const double num =
-//             (d2 * sig_over_s1)
-//             - d2
-//             - sig_over_s1
-//             + (d_m * x_m * sig_over_s1)
-//             + 1.0;
-//         return num / denom;
-//     };
-
-//     const double cand_a = branch_value(sigma3);
-//     const double cand_b = branch_value(sigma2);
-
-//     // Select a physically admissible candidate in [0,1] if possible.
-//     const bool a_ok = std::isfinite(cand_a) && (cand_a >= 0.0) && (cand_a <= 1.0);
-//     const bool b_ok = std::isfinite(cand_b) && (cand_b >= 0.0) && (cand_b <= 1.0);
-
-//     double out = 0.0;
-//     if (a_ok && b_ok)
-//         out = std::min(cand_a, cand_b);
-//     else if (a_ok)
-//         out = cand_a;
-//     else if (b_ok)
-//         out = cand_b;
-//     else
-//         out = std::min(cand_a, cand_b);
-
-//     return std::clamp(out, 0.0, 1.0);
-// }
-
+    const double n = 0.5 * (1.0 - w + q);
+    return std::clamp(n, 0.0, 1.0);
+}
 
 } // namespace
 
-
 double nfl_distribution(double e_k, double mu, double kBT, double delta, int spin_shift) noexcept
 {
-    return nfl_from_x(
-        (e_k + (spin_shift * delta) - mu) / kBT,
-        (2*(spin_shift * delta)) / kBT
-    );
+    return nfl_from_stationary_solution(e_k, mu, kBT, delta, spin_shift);
 }
 
 } // namespace qss::detail
