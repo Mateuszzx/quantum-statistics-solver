@@ -19,7 +19,7 @@ LatticeData = NDArray[np.floating] | float | int
 
 
 try:
-    from . import _qss  # type: ignore[attr-defined]
+    from . import _qss  # type: ignore[attr-defined, unused-ignore]
 except ImportError as e:
     raise ImportError("The _qss extension module is not available.") from e
 
@@ -76,7 +76,7 @@ def prepare_2D_lattice_data(
     # 2D tight-binding dispersion relation
     cos_kx = np.cos(KX)
     cos_ky = np.cos(KY)
-    e_k = 2 * t * (cos_kx + cos_ky) + 2 * t_prim * (cos_kx + cos_ky)
+    e_k = 2 * t * (cos_kx + cos_ky) + 4 * t_prim * cos_kx * cos_ky
 
     return e_k, KX, KY
 
@@ -102,7 +102,7 @@ def _get_cpp_dist_type(dist_type: str | DistType | _qss.DistType) -> _qss.DistTy
 
     if dist_type not in dist_map:
         raise ValueError(
-            f"Invalid distribution type: {dist_type}. " f"Must be one of {list(dist_map.keys())}"
+            f"Invalid distribution type: {dist_type}. Must be one of {list(dist_map.keys())}"
         )
 
     return dist_map[dist_type]
