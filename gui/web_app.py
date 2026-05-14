@@ -18,9 +18,9 @@ import pandas as pd
 import streamlit as st
 
 from gui.lattice import build_dispersion
-from gui.notebook_plots import load_scientific_plotter_v2, plot_distributions_notebook_style
 from gui.panel_plot import mu_for_point, panel_plot
 from gui.paths import quantum_statistics_solver_root
+from gui.scientific_plot import ScientificPlotter
 from gui.solver_options import build_brent_options, build_sa_options
 from gui.streamlit_utils import show_current_figure, st_progress_pair
 from gui.sweep_grids import build_1d_sweep
@@ -442,57 +442,11 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             )
 
     with tab_dist:
-        st.subheader("BZ occupancy")
-        plotterCls = load_scientific_plotter_v2()
-        if plotterCls is None:
+        st.subheader("1D Distribution")
+        if meta["dim"] != "2D":
             st.warning(
-                "Advanced cuts need the parent **qss-results** checkout with `tools/scientific_plot_v2.py` "
-                "next to this submodule (same layout as the Jupyter notebooks)."
+                "Advanced 1D cuts are designed for a 2D lattice. Please select 2D in the sidebar."
             )
-            st.markdown("**Quick view** (single ``μ`` guess — qualitative only).")
-            mu_guess = st.number_input("μ guess", value=0.0)
-            kbt0 = float(st.selectbox("$k_BT$", list(kBT_arr.astype(float))))
-            H0 = float(st.selectbox("$H_a$", list(H_arr.astype(float))))
-            d0 = distros[0]
-            delta = 0.5 * 2.0 * 1.0 * H0
-            occ = distribution(
-                e_k,
-                mu=float(mu_guess),
-                kBT=kbt0,
-                delta=delta,
-                spin_shift=1,
-                dist_type=d0,
-                U=float(meta["U"]),
-            )
-            plt.close("all")
-            qc1, qc2 = st.columns(2)
-            qw = float(qc1.slider("Quick view width", 4.0, 20.0, 7.0, 0.5))
-            qh = float(qc2.slider("Quick view height", 3.0, 14.0, 5.0, 0.5))
-            lim2d = st.checkbox("Quick view: custom color limits", value=False)
-            vmin = vmax = None
-            if lim2d:
-                cl1, cl2 = st.columns(2)
-                vmin = float(cl1.number_input("Color min", value=0.0))
-                vmax = float(cl2.number_input("Color max", value=1.0))
-            fig, ax = plt.subplots(figsize=(qw, qh))
-            if meta["dim"] == "2D" and ky is not None:
-                im = ax.imshow(
-                    occ,
-                    extent=[-np.pi, np.pi, -np.pi, np.pi],
-                    origin="lower",
-                    aspect="auto",
-                    vmin=vmin,
-                    vmax=vmax,
-                )
-                fig.colorbar(im, ax=ax, label="occupancy (one spin)")
-                ax.set_xlabel(r"$k_x$")
-                ax.set_ylabel(r"$k_y$")
-            else:
-                ax.plot(kx, np.diag(occ) if occ.ndim == DIM_2D else occ, lw=2)
-                ax.set_xlabel(r"$k$")
-                ax.set_ylabel("occupancy")
-            ax.set_title(str(d0))
-            st.pyplot(fig, clear_figure=True)
         else:
             slice_type = st.selectbox("1D cut", ["horizontal", "diagonal"], index=0)
             n_opts = list(n_arr.astype(float))
@@ -511,97 +465,86 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                     "n_kd channel / correlator view (Hubbard tooling)", value=False
                 )
                 y0, y1 = st.slider("y axis (occupancy)", -0.05, 2.2, (-0.05, 2.2))
-                fig_w = st.slider(
-                    "Figure width (1D)", 28, 48, int(max(10, style["figsize"][0] * 3.8))
-                )
-                fig_h = st.slider(
-                    "Figure height (1D)", 2, 8, int(max(4, style["figsize"][1]) * 0.8)
-                )
-                fig2_w = st.slider(
-                    "Figure width (2D)", 15, 25, int(max(8, style["figsize"][0] * 2.0))
-                )
-                fig2_h = st.slider(
-                    "Figure height (2D)", 5, 15, int(max(4, style["figsize"][1]) * 10 / 6)
-                )
+                fig_w = st.slider("Figure width (1D)", 10, 48, 30)
+                fig_h = st.slider("Figure height (1D)", 2, 8, 4)
 
                 names = [d.name if hasattr(d, "name") else str(d) for d in distros]
                 plt.close("all")
-                plot_distributions_notebook_style(
-                    Plotter=plotterCls,
-                    e_k=e_k,
-                    kx=kx,
-                    ky=ky if ky is not None else kx,
-                    dim=2 if meta["dim"] == "2D" else 1,
-                    n_list=[float(x) for x in n_pick],
-                    kBT_list=[float(x) for x in k_pick],
-                    H=H_plot,
-                    U=float(meta["U"]),
-                    n_kd=n_kd_flag,
-                    t_prim=float(meta["t_prim"]),
-                    distributions=names,
-                    slice_type=slice_type,
-                    ylims=(float(y0), float(y1)),
-                    figsize_1d=(float(fig_w), float(fig_h)),
-                    figsize_2d=(float(fig2_w), float(fig2_h)),
-                )
-                show_current_figure(st)
-                st.caption(
-                    f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
-                    f"H_a={H_plot:.6g}, slice={slice_type}."
-                )
 
-            if meta["dim"] == "2D" and ky is not None:
-                st.divider()
-                st.subheader("2D occupancy map (uses solved μ)")
-                mu_df = st.session_state["mu_df"]
-                distro_names = [
-                    d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros
-                ]
-                d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
-                n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
-                k2 = float(
-                    st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k")
-                )
-                h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
-                mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2)
-                if mu_val is None:
-                    st.error("Could not find μ for this point in results.")
-                else:
-                    st.caption(f"Using μ = {mu_val:.6g}")
-                    delta = 0.5 * 2.0 * 1.0 * float(h2)
-                    occ = distribution(
-                        e_k,
-                        mu=float(mu_val),
-                        kBT=float(k2),
-                        delta=delta,
-                        spin_shift=1,
-                        dist_type=DIST_MAP[str(d_pick)],
+                plotter = ScientificPlotter()
+                try:
+                    plotter.plot_energy_distribution_1d(
+                        e_k=e_k,
+                        slice_type=slice_type,
+                        dim=2 if meta["dim"] == "2D" else 1,
+                        kx=kx,
+                        n=[float(x) for x in n_pick],
+                        kBTs=[float(x) for x in k_pick],
+                        H=H_plot,
                         U=float(meta["U"]),
+                        n_kd=n_kd_flag,
+                        distributions=names,
+                        ylims=(float(y0), float(y1)),
+                        figsize=(float(fig_w), float(fig_h)),
                     )
-                    plt.close("all")
-                    c1, c2 = st.columns(2)
-                    w = float(c1.slider("2D width", 4.0, 28.0, 10.0, 0.5))
-                    h = float(c2.slider("2D height", 3.0, 20.0, 7.0, 0.5))
-                    lim2d = st.checkbox("Custom color limits", value=False, key="occ2d_lim")
-                    vmin = vmax = None
-                    if lim2d:
-                        cl1, cl2 = st.columns(2)
-                        vmin = float(cl1.number_input("Color min", value=0.0, key="occ2d_vmin"))
-                        vmax = float(cl2.number_input("Color max", value=1.0, key="occ2d_vmax"))
-                    fig, ax = plt.subplots(figsize=(w, h))
-                    im = ax.imshow(
-                        occ,
-                        extent=[-np.pi, np.pi, -np.pi, np.pi],
-                        origin="lower",
-                        aspect="auto",
-                        vmin=vmin,
-                        vmax=vmax,
+                    show_current_figure(st)
+                    st.caption(
+                        f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
+                        f"H_a={H_plot:.6g}, U={float(meta['U']):.6g}, slice={slice_type}."
                     )
-                    fig.colorbar(im, ax=ax, label="occupancy (one spin)")
-                    ax.set_xlabel(r"$k_x$")
-                    ax.set_ylabel(r"$k_y$")
-                    ax.set_title(f"{d_pick}, n={n2:.6g}, kBT={k2:.6g}, H_a={h2:.6g}")
-                    st.pyplot(fig, clear_figure=True)
+                except Exception as e:
+                    st.error(f"Error drawing 1D cuts: {e}")
+
+        if meta["dim"] == "2D" and ky is not None:
+            st.divider()
+            st.subheader("2D occupancy map (uses solved μ)")
+            mu_df = st.session_state["mu_df"]
+            distro_names = [
+                d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros
+            ]
+            d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
+            n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
+            k2 = float(st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k"))
+            h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
+            mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2)
+            if mu_val is None:
+                st.error("Could not find μ for this point in results.")
+            else:
+                st.caption(f"Using μ = {mu_val:.6g}")
+                delta = 0.5 * 2.0 * 1.0 * float(h2)
+                occ = distribution(
+                    e_k,
+                    mu=float(mu_val),
+                    kBT=float(k2),
+                    delta=delta,
+                    spin_shift=1,
+                    dist_type=DIST_MAP[str(d_pick)],
+                    U=float(meta["U"]),
+                )
+                plt.close("all")
+                c1, c2 = st.columns(2)
+                w = float(c1.slider("2D width", 4.0, 28.0, 10.0, 0.5))
+                h = float(c2.slider("2D height", 3.0, 20.0, 7.0, 0.5))
+                lim2d = st.checkbox("Custom color limits", value=False, key="occ2d_lim")
+                vmin = vmax = None
+                if lim2d:
+                    cl1, cl2 = st.columns(2)
+                    vmin = float(cl1.number_input("Color min", value=0.0, key="occ2d_vmin"))
+                    vmax = float(cl2.number_input("Color max", value=1.0, key="occ2d_vmax"))
+                fig, ax = plt.subplots(figsize=(w, h))
+                im = ax.imshow(
+                    occ,
+                    extent=[-np.pi, np.pi, -np.pi, np.pi],
+                    origin="lower",
+                    aspect="auto",
+                    vmin=vmin,
+                    vmax=vmax,
+                )
+                fig.colorbar(im, ax=ax, label="occupancy (one spin)")
+                ax.set_xlabel(r"$k_x$")
+                ax.set_ylabel(r"$k_y$")
+                ax.set_title(f"{d_pick}, n={n2:.6g}, kBT={k2:.6g}, H_a={h2:.6g}")
+                st.pyplot(fig, clear_figure=True)
 
 
 if __name__ == "__main__":
