@@ -167,7 +167,7 @@ directory = "build/coverage/python"
 [tool.ruff]
 line-length = 100
 target-version = "py38"
-extend-exclude = ["tools", "notebooks"]
+extend-exclude = ["tools", "notebooks", "gui"]
 
 [tool.ruff.lint]
 # Select rules to enable (see: https://docs.astral.sh/ruff/rules/)

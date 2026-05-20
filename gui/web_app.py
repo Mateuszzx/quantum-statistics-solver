@@ -18,7 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from gui.lattice import build_dispersion
-from gui.panel_plot import mu_for_point, panel_plot
+clfrom gui.panel_plot import mu_for_point, panel_plot
 from gui.paths import quantum_statistics_solver_root
 from gui.scientific_plot import ScientificPlotter
 from gui.solver_options import build_brent_options, build_sa_options
