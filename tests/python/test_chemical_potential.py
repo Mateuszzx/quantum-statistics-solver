@@ -51,11 +51,11 @@ class TestChemicalPotential:
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 2
         assert list(df.columns) == ["mu", "iterations", "converged", "residual"]
-        assert df.index.names == ["distro", "n", "k_BT", "H_a"]
+        assert df.index.names == ["distro", "n", "k_BT", "H_a", "U"]
 
         # Check index values
-        assert df.index[0] == ("FD", 0.4, 1.0, 0.0)
-        assert df.index[1] == ("FD", 0.6, 1.0, 0.0)
+        assert df.index[0] == ("FD", 0.4, 1.0, 0.0, 0.0)
+        assert df.index[1] == ("FD", 0.6, 1.0, 0.0, 0.0)
 
     def test_chemical_potential_invalid_E(self):
         E = np.zeros((2, 3)) # Not square
