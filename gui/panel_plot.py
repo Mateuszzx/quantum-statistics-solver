@@ -7,24 +7,6 @@ import pandas as pd
 from qss.distributions import DistType
 
 
-def mu_for_point(  # noqa: PLR0913
-    mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float, U: float
-) -> float | None:
-    dff = mu_df.reset_index().copy()
-    if "distro" in dff.columns:
-        dff["distro"] = dff["distro"].astype(str).map(lambda s: s.split(".")[-1])
-    m = dff[
-        (dff["distro"] == str(distro))
-        & (dff["n"].astype(float) == float(n))
-        & (dff["k_BT"].astype(float) == float(kBT))
-        & (dff["H_a"].astype(float) == float(H_a))
-        & (dff["U"].astype(float) == float(U))
-    ]
-    if m.empty:
-        return None
-    return float(m["mu"].iloc[0])
-
-
 def panel_plot(  # noqa: PLR0913, PLR0912, PLR0915
     df: pd.DataFrame,
     *,
