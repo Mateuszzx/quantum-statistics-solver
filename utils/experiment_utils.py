@@ -73,16 +73,16 @@ def run_experiment(  # noqa: PLR0913
     x0: float = 0.0,
     a0: float = -10.0,
     b0: float = 10.0,
-    U: float = 0.0,
+    U_vals: Sequence[float] | float = 0.0,
     progress: Callable[[int, int], None] | None = None,
 ) -> pd.DataFrame:
     """
-    Run ``chemical_potential`` for a Cartesian grid of (distro, k_B T, H_a, n).
+    Run ``chemical_potential`` for a Cartesian grid of (distro, k_B T, H_a, u, n).
 
     Parameters
     ----------
-    n_vals, kBT_vals, h_a_vals
-        Sweeps in band filling, temperature k_B T / |t|, and magnetic field (Tesla).
+    n_vals, kBT_vals, h_a_vals, U_vals
+        Sweeps in band filling, temperature k_B T / |t|, magnetic field (Tesla), and U parameter.
     progress
         Optional ``progress(done, total)`` callback (e.g. Streamlit progress bar).
     """
@@ -91,47 +91,53 @@ def run_experiment(  # noqa: PLR0913
     logs_path = Path(logs_dir)
     logs_path.mkdir(parents=True, exist_ok=True)
 
+    if isinstance(U_vals, (int, float)):
+        U_iter = [float(U_vals)]
+    else:
+        U_iter = list(U_vals)
+
     results: list[pd.DataFrame] = []
-    total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(n_vals)
+    total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(n_vals) * len(U_iter)
     done = 0
 
     with tqdm(total=total, desc="Simulations", disable=progress is not None) as pbar:
         for d in distros:
             for kbt in kBT_vals:
                 for h in h_a_vals:
-                    for n_val in n_vals:
-                        try:
-                            rnd = uuid.uuid4().hex[:6]
-                            dist_name = str(d).split(".")[-1]
-                            log_fn = (
-                                logs_path
-                                / f"log_{solver.lower()}_{dist_name}_kbt{kbt:.4g}_n{n_val:.4g}_H{h:.4g}_{rnd}.csv"
-                            )
-                            _set_log_path(native_opts, str(log_fn))
+                    for u_val in U_iter:
+                        for n_val in n_vals:
+                            try:
+                                rnd = uuid.uuid4().hex[:6]
+                                dist_name = str(d).split(".")[-1]
+                                log_fn = (
+                                    logs_path
+                                    / f"log_{solver.lower()}_{dist_name}_kbt{kbt:.4g}_n{n_val:.4g}_H{h:.4g}_U{u_val:.4g}_{rnd}.csv"
+                                )
+                                _set_log_path(native_opts, str(log_fn))
 
-                            res_df = chemical_potential(
-                                distros=[d],
-                                n_vals=[float(n_val)],
-                                kBT_vals=[float(kbt)],
-                                H_a_vals=[float(h)],
-                                N=int(N),
-                                E=e_k,
-                                U=float(U),
-                                solver_opts=native_opts,
-                                x0=float(x0),
-                                a0=float(a0),
-                                b0=float(b0),
-                            )
-                            results.append(res_df)
-                        except Exception as e:
-                            print(f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}\nDetails: {e}")
-                        done += 1
-                        pbar.update(1)
-                        if progress is not None:
-                            progress(done, total)
+                                res_df = chemical_potential(
+                                    distros=[d],
+                                    n_vals=[float(n_val)],
+                                    kBT_vals=[float(kbt)],
+                                    H_a_vals=[float(h)],
+                                    N=int(N),
+                                    E=e_k,
+                                    U_vals=[float(u_val)],
+                                    solver_opts=native_opts,
+                                    x0=float(x0),
+                                    a0=float(a0),
+                                    b0=float(b0),
+                                )
+                                results.append(res_df)
+                            except Exception as e:
+                                print(f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}, U={u_val}\nDetails: {e}")
+                            done += 1
+                            pbar.update(1)
+                            if progress is not None:
+                                progress(done, total)
 
     if not results:
-        idx = pd.MultiIndex.from_tuples([], names=["distro", "n", "k_BT", "H_a"])
+        idx = pd.MultiIndex.from_tuples([], names=["distro", "n", "k_BT", "H_a", "U"])
         return pd.DataFrame(index=idx)
 
     final_df = pd.concat(results)

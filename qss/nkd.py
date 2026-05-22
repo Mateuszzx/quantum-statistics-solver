@@ -47,15 +47,22 @@ def n_kd(
     for row in df.itertuples():
         # Extract parameters from index or columns
         try:
-            if isinstance(row.Index, tuple) and len(row.Index) == 4:
-                distro_str, _, k_BT, H_a = row.Index
+            if isinstance(row.Index, tuple):
+                if len(row.Index) == 5:
+                    distro_str, _, k_BT, H_a, row_U = row.Index
+                elif len(row.Index) == 4:
+                    distro_str, _, k_BT, H_a = row.Index
+                    row_U = U
+                else:
+                    raise ValueError("Incorrect Index shape")
             else:
                 distro_str = row.distro
                 k_BT = row.k_BT
                 H_a = row.H_a
+                row_U = getattr(row, "U", U)
         except AttributeError as e:
             raise ValueError(
-                "Input DataFrame must have 'distro', 'n', 'k_BT', 'H_a' either as MultiIndex levels or columns."
+                "Input DataFrame must have 'distro', 'n', 'k_BT', 'H_a', 'U' either as MultiIndex levels or columns."
             ) from e
 
         mu = row.mu
@@ -65,14 +72,14 @@ def n_kd(
         match distro_str:
             case "HUBBARD":
                 n_kd = distribution(
-                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U, n_kd=True
+                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U, n_kd=True
                 )
             case _:
                 n_up = distribution(
-                    E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U
+                    E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U
                 )
                 n_down = distribution(
-                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U
                 )
                 n_kd = n_up * n_down
 

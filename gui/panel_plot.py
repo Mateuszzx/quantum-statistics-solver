@@ -8,7 +8,7 @@ from qss.distributions import DistType
 
 
 def mu_for_point(
-    mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float
+    mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float, U: float
 ) -> float | None:
     dff = mu_df.reset_index().copy()
     if "distro" in dff.columns:
@@ -18,6 +18,7 @@ def mu_for_point(
         & (dff["n"].astype(float) == float(n))
         & (dff["k_BT"].astype(float) == float(kBT))
         & (dff["H_a"].astype(float) == float(H_a))
+        & (dff["U"].astype(float) == float(U))
     ]
     if m.empty:
         return None
@@ -61,6 +62,7 @@ def panel_plot(  # noqa: PLR0913, PLR0912, PLR0915
         "n": r"$n$",
         "k_BT": r"$k_B T/|t|$",
         "H_a": r"$H_a$ (T)",
+        "U": r"$U/|t|$",
     }
 
     def _var_label(v: str) -> str:

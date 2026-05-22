@@ -39,7 +39,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     kBT_vals: Sequence[float],
     H_a_vals: Sequence[float],
     E: np.ndarray,
-    U: float = 0.0,
+    U_vals: Sequence[float] | float = 0.0,
     N: int | None = None,
     solver_opts: _qss.CombinedSolverOptions | None = None,
     g: float = 2.0,
@@ -63,8 +63,8 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
         Applied magnetic field values (Tesla)
     E : ndarray
         Energy matrix (square 2D array)
-    U : float
-        Hubbard U parameter (default: 0.0)
+    U_vals : sequence of float or float
+        Hubbard U parameter(s) (default: 0.0)
     N : int, optional
         Effective system size (defaults to E.shape[0])
     solver_opts : CombinedSolverOptions, optional
@@ -86,6 +86,11 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
         distro_iter = [distros]
     else:
         distro_iter = list(distros)
+
+    if isinstance(U_vals, (int, float)):
+        U_iter = [float(U_vals)]
+    else:
+        U_iter = list(U_vals)
 
     # Validate energy matrix
     if E.ndim != 2 or E.shape[0] != E.shape[1]:
@@ -127,34 +132,36 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
             kBT_f = float(kBT_val)
             for h_val in H_a_vals:
                 h_f = float(h_val)
-                # Call vectorized backend (loops over n internally)
-                results = _qss.chemical_potential_B_multi_n(
-                    native_dist,
-                    kBT_f,
-                    n_vals,
-                    N_eff,
-                    E,
-                    h_f,
-                    float(U),
-                    float(g),
-                    float(muB_eV_per_T),
-                    solver_opts_native,
-                    float(a0),
-                    float(b0),
-                    float(x0),
-                )
-                for n_val, (mu, iters, conv, err) in zip(n_vals, results):
-                    records.append(
-                        {
-                            "mu": float(mu),
-                            "iterations": int(iters),
-                            "converged": bool(conv),
-                            "residual": float(err),
-                        }
+                for u_val in U_iter:
+                    u_f = float(u_val)
+                    # Call vectorized backend (loops over n internally)
+                    results = _qss.chemical_potential_B_multi_n(
+                        native_dist,
+                        kBT_f,
+                        n_vals,
+                        N_eff,
+                        E,
+                        h_f,
+                        u_f,
+                        float(g),
+                        float(muB_eV_per_T),
+                        solver_opts_native,
+                        float(a0),
+                        float(b0),
+                        float(x0),
                     )
-                    index_keys.append((_dist_label(distro), n_val, kBT_val, h_val))
+                    for n_val, (mu, iters, conv, err) in zip(n_vals, results):
+                        records.append(
+                            {
+                                "mu": float(mu),
+                                "iterations": int(iters),
+                                "converged": bool(conv),
+                                "residual": float(err),
+                            }
+                        )
+                        index_keys.append((_dist_label(distro), n_val, kBT_val, h_val, u_val))
 
-    idx = pd.MultiIndex.from_tuples(index_keys, names=["distro", "n", "k_BT", "H_a"])
+    idx = pd.MultiIndex.from_tuples(index_keys, names=["distro", "n", "k_BT", "H_a", "U"])
     return pd.DataFrame.from_records(records, index=idx)
 
 

@@ -54,21 +54,28 @@ def energy(
     for i, row in enumerate(df.itertuples()):
         # Extract parameters from index or columns
         try:
-            if isinstance(row.Index, tuple) and len(row.Index) == 4:
-                distro_str, _, k_BT, H_a = row.Index
+            if isinstance(row.Index, tuple):
+                if len(row.Index) == 5:
+                    distro_str, _, k_BT, H_a, row_U = row.Index
+                elif len(row.Index) == 4:
+                    distro_str, _, k_BT, H_a = row.Index
+                    row_U = U
+                else:
+                    raise ValueError("Incorrect Index shape")
             else:
                 distro_str = row.distro
                 k_BT = row.k_BT
                 H_a = row.H_a
+                row_U = getattr(row, "U", U)
         except AttributeError as e:
             raise ValueError(
-                "Input DataFrame must have 'distro', 'n', 'k_BT', 'H_a' either as MultiIndex levels or columns."
+                "Input DataFrame must have 'distro', 'n', 'k_BT', 'H_a', 'U' either as MultiIndex levels or columns."
             ) from e
 
         mu = row.mu
 
         if H_a == 0:
-            n_vals = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=U)
+            n_vals = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=row_U)
             avg_energy = 2.0 * np.mean(E * n_vals)
         else:
             # Zeeman split case
@@ -77,9 +84,9 @@ def energy(
             E_up = E - delta
             E_down = E + delta
 
-            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=U)
+            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U)
             n_down = distribution(
-                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=U
+                E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U
             )
             avg_energy = np.mean(E_up * n_up + E_down * n_down)
 

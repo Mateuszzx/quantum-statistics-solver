@@ -120,10 +120,17 @@ def _sidebar_sweeps() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return n_vals, kBT_vals, H_a_vals
 
 
-def _sidebar_physics() -> float:
+def _sidebar_physics() -> np.ndarray:
     st.sidebar.subheader("Hubbard")
     st.sidebar.markdown(r"$$U/|t|$$")
-    return float(st.sidebar.number_input("U / |t|", value=0.0))
+    u_mode = st.sidebar.radio("U spacing", ["linear", "log"], horizontal=True, key="umode")
+    u1, u2 = st.sidebar.columns(2)
+    u_min = float(u1.number_input("U min", value=0.0, format="%.2f", key="umin"))
+    u_max = float(u2.number_input("U max", value=0.0, format="%.2f", key="umax"))
+    u_count = int(st.sidebar.number_input("U points", 1, 200, 1, key="ucnt"))
+    if u_mode == "log" and u_count >= MIN_SWEEP_COUNT and (u_min <= 0 or u_max <= 0):
+        st.sidebar.error("Log U sweep needs strictly positive min and max.")
+    return build_1d_sweep(u_min, u_max, u_count, "linear" if u_mode == "linear" else "log")
 
 
 def _solver_controls(container: object) -> tuple[str, object | None, float, float, float]:
@@ -265,7 +272,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     distros = _sidebar_distros()
     dim, N, t, t_prim = _sidebar_lattice()
     n_vals, kBT_vals, H_a_vals = _sidebar_sweeps()
-    U = _sidebar_physics()
+    U_vals = _sidebar_physics()
 
     with st.expander("Solver parameters", expanded=False):
         solver, solver_opts, a0, b0, x0 = _solver_controls(st)
@@ -275,7 +282,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     logs_dir.mkdir(parents=True, exist_ok=True)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
-    est = len(distros) * len(n_vals) * len(kBT_vals) * len(H_a_vals)
+    est = len(distros) * len(n_vals) * len(kBT_vals) * len(H_a_vals) * len(U_vals)
     st.sidebar.metric("Total solves (approx.)", f"{est:,}")
 
     if st.sidebar.button("Run experiment", type="primary"):
@@ -288,6 +295,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             n_run = n_vals
             kbt_run = kBT_vals
             h_run = H_a_vals
+            u_run = U_vals
             out_csv_run = out_csv
             with st.spinner("Running chemical potential solves…"):
                 mu_df = run_experiment(
@@ -304,7 +312,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                     x0=x0,
                     a0=a0,
                     b0=b0,
-                    U=U,
+                    U_vals=u_run,
                     progress=prog_cb,
                 )
             prog_ph.empty()
@@ -320,17 +328,17 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                 "n_vals": np.array(n_run, dtype=float),
                 "kBT_vals": np.array(kbt_run, dtype=float),
                 "H_a_vals": np.array(h_run, dtype=float),
+                "U_vals": np.array(u_run, dtype=float),
                 "distros": distros,
                 "t_prim": t_prim,
                 "N": int(e_k.shape[0]),
                 "dim": dim,
-                "U": U,
             }
             with st.spinner("Computing S, E, F, M, n_kd…"):
-                st.session_state["entropy_df"] = compute_entropy(mu_df, e_k, U=U)
-                st.session_state["energy_df"] = compute_energy(mu_df, e_k, U=U)
-                st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k, U=U)
-                st.session_state["nkd_df"] = compute_nkd(mu_df, e_k, U=U)
+                st.session_state["entropy_df"] = compute_entropy(mu_df, e_k)
+                st.session_state["energy_df"] = compute_energy(mu_df, e_k)
+                st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k)
+                st.session_state["nkd_df"] = compute_nkd(mu_df, e_k)
             st.success("Finished.")
         except Exception as e:
             prog_ph.empty()
@@ -346,13 +354,12 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     if mu_df is not None:
         meta = st.session_state["meta"]
         e_k = st.session_state["e_k"]
-        Umeta = float(meta["U"])
         if "entropy_df" not in st.session_state:
             with st.spinner("Computing S, E, F, M, n_kd…"):
-                st.session_state["entropy_df"] = compute_entropy(mu_df, e_k, U=Umeta)
-                st.session_state["energy_df"] = compute_energy(mu_df, e_k, U=Umeta)
-                st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k, U=Umeta)
-                st.session_state["nkd_df"] = compute_nkd(mu_df, e_k, U=Umeta)
+                st.session_state["entropy_df"] = compute_entropy(mu_df, e_k)
+                st.session_state["energy_df"] = compute_energy(mu_df, e_k)
+                st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k)
+                st.session_state["nkd_df"] = compute_nkd(mu_df, e_k)
 
     with st.expander("Plot style", expanded=False):
         style = _plot_style_controls()
@@ -364,6 +371,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     n_arr = meta["n_vals"]
     kBT_arr = meta["kBT_vals"]
     H_arr = meta["H_a_vals"]
+    U_arr = meta["U_vals"]
 
     tab_panels, tab_dist = st.tabs(["Panels", "Distributions"])
 
@@ -372,13 +380,13 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             "Quantity", options=list(DERIVED_MAP.keys()), index=0, key="panel_qty"
         )
         x_var = st.selectbox(
-            "X axis variable", options=["n", "k_BT", "H_a"], index=0, key="panel_x"
+            "X axis variable", options=["n", "k_BT", "H_a", "U"], index=0, key="panel_x"
         )
         x_scale = st.radio(
             "X scale", ["linear", "log"], horizontal=True, index=0, key="panel_xscale"
         )
         panel_var_raw = st.selectbox(
-            "Sweep in panels", options=["(none)", "k_BT", "H_a"], index=1, key="panel_pan"
+            "Sweep in panels", options=["(none)", "k_BT", "H_a", "U"], index=1, key="panel_pan"
         )
         panel_var = None if panel_var_raw == "(none)" else str(panel_var_raw)
         if panel_var == x_var:
@@ -388,7 +396,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         n_cols = int(style["cols"])
 
         fixed: dict[str, float] = {}
-        for var, opts in (("n", n_arr), ("k_BT", kBT_arr), ("H_a", H_arr)):
+        for var, opts in (("n", n_arr), ("k_BT", kBT_arr), ("H_a", H_arr), ("U", U_arr)):
             if var in (x_var, panel_var):
                 continue
             vals = list(np.array(opts, dtype=float))
@@ -419,7 +427,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             style=style,
         )
         show_current_figure(st)
-        var_inline = {"n": r"$n$", "k_BT": r"$k_B T/|t|$", "H_a": r"$H_a$"}
+        var_inline = {"n": r"$n$", "k_BT": r"$k_B T/|t|$", "H_a": r"$H_a$", "U": r"$U/|t|$"}
         fixed_md = (
             ", ".join([f"{var_inline.get(k, k)}={v:.6g}" for k, v in fixed.items()]) or "(none)"
         )
@@ -445,8 +453,54 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         st.subheader("1D Distribution")
         if meta["dim"] != "2D":
             st.warning(
-                "Advanced 1D cuts are designed for a 2D lattice. Please select 2D in the sidebar."
+                "Advanced cuts need the parent **qss-results** checkout with `tools/scientific_plot_v2.py` "
+                "next to this submodule (same layout as the Jupyter notebooks)."
             )
+            st.markdown("**Quick view** (single ``μ`` guess — qualitative only).")
+            mu_guess = st.number_input("μ guess", value=0.0)
+            kbt0 = float(st.selectbox("$k_BT$", list(kBT_arr.astype(float))))
+            H0 = float(st.selectbox("$H_a$", list(H_arr.astype(float))))
+            d0 = distros[0]
+            U0 = float(st.selectbox("U guess", list(U_arr.astype(float)), key="u0_guess"))
+            delta = 0.5 * 2.0 * 1.0 * H0
+            occ = distribution(
+                e_k,
+                mu=float(mu_guess),
+                kBT=kbt0,
+                delta=delta,
+                spin_shift=1,
+                dist_type=d0,
+                U=U0,
+            )
+            plt.close("all")
+            qc1, qc2 = st.columns(2)
+            qw = float(qc1.slider("Quick view width", 4.0, 20.0, 7.0, 0.5))
+            qh = float(qc2.slider("Quick view height", 3.0, 14.0, 5.0, 0.5))
+            lim2d = st.checkbox("Quick view: custom color limits", value=False)
+            vmin = vmax = None
+            if lim2d:
+                cl1, cl2 = st.columns(2)
+                vmin = float(cl1.number_input("Color min", value=0.0))
+                vmax = float(cl2.number_input("Color max", value=1.0))
+            fig, ax = plt.subplots(figsize=(qw, qh))
+            if meta["dim"] == "2D" and ky is not None:
+                im = ax.imshow(
+                    occ,
+                    extent=[-np.pi, np.pi, -np.pi, np.pi],
+                    origin="lower",
+                    aspect="auto",
+                    vmin=vmin,
+                    vmax=vmax,
+                )
+                fig.colorbar(im, ax=ax, label="occupancy (one spin)")
+                ax.set_xlabel(r"$k_x$")
+                ax.set_ylabel(r"$k_y$")
+            else:
+                ax.plot(kx, np.diag(occ) if occ.ndim == DIM_2D else occ, lw=2)
+                ax.set_xlabel(r"$k$")
+                ax.set_ylabel("occupancy")
+            ax.set_title(str(d0))
+            st.pyplot(fig, clear_figure=True)
         else:
             slice_type = st.selectbox("1D cut", ["horizontal", "diagonal"], index=0)
             n_opts = list(n_arr.astype(float))
@@ -461,6 +515,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                 st.error("Select at least one value for **n** and for **$k_BT$**.")
             else:
                 H_plot = float(st.selectbox("H_a for plot", list(H_arr.astype(float))))
+                U_plot = float(st.selectbox("U for plot", list(U_arr.astype(float))))
                 n_kd_flag = st.checkbox(
                     "n_kd channel / correlator view (Hubbard tooling)", value=False
                 )
@@ -470,81 +525,83 @@ def main() -> None:  # noqa: PLR0912, PLR0915
 
                 names = [d.name if hasattr(d, "name") else str(d) for d in distros]
                 plt.close("all")
-
-                plotter = ScientificPlotter()
-                try:
-                    plotter.plot_energy_distribution_1d(
-                        e_k=e_k,
-                        slice_type=slice_type,
-                        dim=2 if meta["dim"] == "2D" else 1,
-                        kx=kx,
-                        n=[float(x) for x in n_pick],
-                        kBTs=[float(x) for x in k_pick],
-                        H=H_plot,
-                        U=float(meta["U"]),
-                        n_kd=n_kd_flag,
-                        distributions=names,
-                        ylims=(float(y0), float(y1)),
-                        figsize=(float(fig_w), float(fig_h)),
-                    )
-                    show_current_figure(st)
-                    st.caption(
-                        f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
-                        f"H_a={H_plot:.6g}, U={float(meta['U']):.6g}, slice={slice_type}."
-                    )
-                except Exception as e:
-                    st.error(f"Error drawing 1D cuts: {e}")
-
-        if meta["dim"] == "2D" and ky is not None:
-            st.divider()
-            st.subheader("2D occupancy map (uses solved μ)")
-            mu_df = st.session_state["mu_df"]
-            distro_names = [
-                d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros
-            ]
-            d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
-            n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
-            k2 = float(st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k"))
-            h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
-            mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2)
-            if mu_val is None:
-                st.error("Could not find μ for this point in results.")
-            else:
-                st.caption(f"Using μ = {mu_val:.6g}")
-                delta = 0.5 * 2.0 * 1.0 * float(h2)
-                occ = distribution(
-                    e_k,
-                    mu=float(mu_val),
-                    kBT=float(k2),
-                    delta=delta,
-                    spin_shift=1,
-                    dist_type=DIST_MAP[str(d_pick)],
-                    U=float(meta["U"]),
+                plot_distributions_notebook_style(
+                    Plotter=plotterCls,
+                    e_k=e_k,
+                    kx=kx,
+                    ky=ky if ky is not None else kx,
+                    dim=2 if meta["dim"] == "2D" else 1,
+                    n_list=[float(x) for x in n_pick],
+                    kBT_list=[float(x) for x in k_pick],
+                    H=H_plot,
+                    U=U_plot,
+                    n_kd=n_kd_flag,
+                    t_prim=float(meta["t_prim"]),
+                    distributions=names,
+                    slice_type=slice_type,
+                    ylims=(float(y0), float(y1)),
+                    figsize_1d=(float(fig_w), float(fig_h)),
+                    figsize_2d=(float(fig2_w), float(fig2_h)),
                 )
-                plt.close("all")
-                c1, c2 = st.columns(2)
-                w = float(c1.slider("2D width", 4.0, 28.0, 10.0, 0.5))
-                h = float(c2.slider("2D height", 3.0, 20.0, 7.0, 0.5))
-                lim2d = st.checkbox("Custom color limits", value=False, key="occ2d_lim")
-                vmin = vmax = None
-                if lim2d:
-                    cl1, cl2 = st.columns(2)
-                    vmin = float(cl1.number_input("Color min", value=0.0, key="occ2d_vmin"))
-                    vmax = float(cl2.number_input("Color max", value=1.0, key="occ2d_vmax"))
-                fig, ax = plt.subplots(figsize=(w, h))
-                im = ax.imshow(
-                    occ,
-                    extent=[-np.pi, np.pi, -np.pi, np.pi],
-                    origin="lower",
-                    aspect="auto",
-                    vmin=vmin,
-                    vmax=vmax,
+                show_current_figure(st)
+                st.caption(
+                    f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
+                    f"H_a={H_plot:.6g}, U={U_plot:.6g}, slice={slice_type}."
                 )
-                fig.colorbar(im, ax=ax, label="occupancy (one spin)")
-                ax.set_xlabel(r"$k_x$")
-                ax.set_ylabel(r"$k_y$")
-                ax.set_title(f"{d_pick}, n={n2:.6g}, kBT={k2:.6g}, H_a={h2:.6g}")
-                st.pyplot(fig, clear_figure=True)
+
+            if meta["dim"] == "2D" and ky is not None:
+                st.divider()
+                st.subheader("2D occupancy map (uses solved μ)")
+                mu_df = st.session_state["mu_df"]
+                distro_names = [
+                    d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros
+                ]
+                d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
+                n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
+                k2 = float(
+                    st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k")
+                )
+                h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
+                u2 = float(st.selectbox("U", options=list(U_arr.astype(float)), key="occ2d_u"))
+                mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2, U=u2)
+                if mu_val is None:
+                    st.error("Could not find μ for this point in results.")
+                else:
+                    st.caption(f"Using μ = {mu_val:.6g}")
+                    delta = 0.5 * 2.0 * 1.0 * float(h2)
+                    occ = distribution(
+                        e_k,
+                        mu=float(mu_val),
+                        kBT=float(k2),
+                        delta=delta,
+                        spin_shift=1,
+                        dist_type=DIST_MAP[str(d_pick)],
+                        U=float(u2),
+                    )
+                    plt.close("all")
+                    c1, c2 = st.columns(2)
+                    w = float(c1.slider("2D width", 4.0, 28.0, 10.0, 0.5))
+                    h = float(c2.slider("2D height", 3.0, 20.0, 7.0, 0.5))
+                    lim2d = st.checkbox("Custom color limits", value=False, key="occ2d_lim")
+                    vmin = vmax = None
+                    if lim2d:
+                        cl1, cl2 = st.columns(2)
+                        vmin = float(cl1.number_input("Color min", value=0.0, key="occ2d_vmin"))
+                        vmax = float(cl2.number_input("Color max", value=1.0, key="occ2d_vmax"))
+                    fig, ax = plt.subplots(figsize=(w, h))
+                    im = ax.imshow(
+                        occ,
+                        extent=[-np.pi, np.pi, -np.pi, np.pi],
+                        origin="lower",
+                        aspect="auto",
+                        vmin=vmin,
+                        vmax=vmax,
+                    )
+                    fig.colorbar(im, ax=ax, label="occupancy (one spin)")
+                    ax.set_xlabel(r"$k_x$")
+                    ax.set_ylabel(r"$k_y$")
+                    ax.set_title(f"{d_pick}, n={n2:.6g}, kBT={k2:.6g}, H_a={h2:.6g}, U={u2:.6g}")
+                    st.pyplot(fig, clear_figure=True)
 
 
 if __name__ == "__main__":
