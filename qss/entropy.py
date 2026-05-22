@@ -185,7 +185,9 @@ def entropy(
         if H_a == 0:
             # Spin degenerate case
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_single = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=row_U)
+            n_single = distribution(
+                E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=row_U
+            )
             n_kd = distribution(
                 E, mu, k_BT, delta=0.0, spin_shift=-1, dist_type=distro_str, U=row_U, n_kd=True
             )
@@ -198,7 +200,9 @@ def entropy(
             delta = 0.5 * g * muB_eV_per_T * H_a
 
             # distribution() returns single-spin occupancy (0..1 for FD)
-            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U)
+            n_up = distribution(
+                E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U
+            )
             n_down = distribution(
                 E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U
             )

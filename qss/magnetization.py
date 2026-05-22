@@ -76,7 +76,9 @@ def calculate_magnetization(
             # Zeeman split case
             delta = 0.5 * g * muB_eV_per_T * H_a
 
-            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U)
+            n_up = distribution(
+                E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U
+            )
             n_down = distribution(
                 E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U
             )

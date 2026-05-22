@@ -11,6 +11,7 @@ from .chemical_potential import chemical_potential
 from .distributions import DistType, prepare_2D_lattice_data
 from .energy import energy
 from .entropy import entropy
+from .heat_capacity import heat_capacity
 from .nkd import n_kd
 from .solver_options import (
     BracketerType,
@@ -30,6 +31,7 @@ __all__ = [
     "chemical_potential",
     "energy",
     "entropy",
+    "heat_capacity",
     "prepare_2D_lattice_data",
     "sa_defaults",
 ]

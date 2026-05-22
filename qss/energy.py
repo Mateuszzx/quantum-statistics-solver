@@ -11,7 +11,7 @@ from .distributions import distribution
 from .entropy import entropy as calculate_entropy
 
 
-def energy(
+def energy(  # noqa: PLR0912
     df: pd.DataFrame,
     E: np.ndarray,
     g: float = 2.0,
@@ -75,7 +75,9 @@ def energy(
         mu = row.mu
 
         if H_a == 0:
-            n_vals = distribution(E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=row_U)
+            n_vals = distribution(
+                E, mu, k_BT, delta=0.0, spin_shift=1, dist_type=distro_str, U=row_U
+            )
             avg_energy = 2.0 * np.mean(E * n_vals)
         else:
             # Zeeman split case
@@ -84,7 +86,9 @@ def energy(
             E_up = E - delta
             E_down = E + delta
 
-            n_up = distribution(E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U)
+            n_up = distribution(
+                E, mu, k_BT, delta=delta, spin_shift=1, dist_type=distro_str, U=row_U
+            )
             n_down = distribution(
                 E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U
             )

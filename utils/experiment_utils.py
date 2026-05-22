@@ -91,7 +91,7 @@ def run_experiment(  # noqa: PLR0913
     logs_path = Path(logs_dir)
     logs_path.mkdir(parents=True, exist_ok=True)
 
-U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)      
+    U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
     results: list[pd.DataFrame] = []
     total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(n_vals) * len(U_iter)
     done = 0
@@ -126,7 +126,9 @@ U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
                                 )
                                 results.append(res_df)
                             except Exception as e:
-                                print(f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}, U={u_val}\nDetails: {e}")
+                                print(
+                                    f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}, U={u_val}\nDetails: {e}"
+                                )
                             done += 1
                             pbar.update(1)
                             if progress is not None:

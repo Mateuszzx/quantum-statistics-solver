@@ -87,10 +87,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     else:
         distro_iter = list(distros)
 
-    if isinstance(U_vals, (int, float)):
-        U_iter = [float(U_vals)]
-    else:
-        U_iter = list(U_vals)
+    U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
 
     # Validate energy matrix
     if E.ndim != 2 or E.shape[0] != E.shape[1]:

@@ -7,7 +7,7 @@ import pandas as pd
 from qss.distributions import DistType
 
 
-def mu_for_point(
+def mu_for_point(  # noqa: PLR0913
     mu_df: pd.DataFrame, *, distro: str, n: float, kBT: float, H_a: float, U: float
 ) -> float | None:
     dff = mu_df.reset_index().copy()

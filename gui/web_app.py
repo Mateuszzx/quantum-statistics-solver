@@ -27,6 +27,7 @@ from gui.sweep_grids import build_1d_sweep
 from qss.distributions import DistType, distribution
 from qss.energy import energy as compute_energy
 from qss.entropy import entropy as compute_entropy
+from qss.heat_capacity import heat_capacity as compute_heat_capacity
 from qss.magnetization import calculate_magnetization
 from qss.nkd import n_kd as compute_nkd
 from qss.solver_options import CoolingSchedule
@@ -58,6 +59,7 @@ SCHED_MAP = {
 DERIVED_MAP: dict[str, tuple[str, str]] = {
     "Chemical potential μ": ("mu", r"chemical potential $\mu / |t|$"),
     "Entropy S": ("entropy", r"entropy $S$"),
+    "Heat capacity C": ("heat_capacity", r"heat capacity $C$"),
     "Energy E": ("energy", r"energy $E$"),
     "Free energy F": ("free_energy", r"free energy $F$"),
     "Magnetization M": ("magnetization", r"magnetization $M$"),
@@ -208,6 +210,8 @@ def _df_for_quantity(*, quantity_name: str) -> tuple[pd.DataFrame, str, str]:
         return st.session_state["mu_df"], y_col, y_label
     if y_col == "entropy":
         return st.session_state["entropy_df"], y_col, y_label
+    if y_col == "heat_capacity":
+        return st.session_state["heat_cap_df"], y_col, y_label
     if y_col in ("energy", "free_energy"):
         return st.session_state["energy_df"], y_col, y_label
     if y_col == "magnetization":
@@ -334,8 +338,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                 "N": int(e_k.shape[0]),
                 "dim": dim,
             }
-            with st.spinner("Computing S, E, F, M, n_kd…"):
+            with st.spinner("Computing S, C, E, F, M, n_kd…"):
                 st.session_state["entropy_df"] = compute_entropy(mu_df, e_k)
+                st.session_state["heat_cap_df"] = compute_heat_capacity(mu_df, e_k)
                 st.session_state["energy_df"] = compute_energy(mu_df, e_k)
                 st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k)
                 st.session_state["nkd_df"] = compute_nkd(mu_df, e_k)
@@ -355,8 +360,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         meta = st.session_state["meta"]
         e_k = st.session_state["e_k"]
         if "entropy_df" not in st.session_state:
-            with st.spinner("Computing S, E, F, M, n_kd…"):
+            with st.spinner("Computing S, C, E, F, M, n_kd…"):
                 st.session_state["entropy_df"] = compute_entropy(mu_df, e_k)
+                st.session_state["heat_cap_df"] = compute_heat_capacity(mu_df, e_k)
                 st.session_state["energy_df"] = compute_energy(mu_df, e_k)
                 st.session_state["mag_df"] = calculate_magnetization(mu_df, e_k)
                 st.session_state["nkd_df"] = compute_nkd(mu_df, e_k)
@@ -463,38 +469,79 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             d0 = distros[0]
             U0 = float(st.selectbox("U guess", list(U_arr.astype(float)), key="u0_guess"))
             delta = 0.5 * 2.0 * 1.0 * H0
+
+            spin_choice = st.radio(
+                "Spin channel",
+                ["up (+1)", "down (-1)", "nkd"],
+                index=0,
+                horizontal=True,
+                key="occ_spin_quick",
+            )
+            is_nkd = "nkd" in spin_choice
+            spin_shift = 1 if "up" in spin_choice else -1
+
             occ = distribution(
                 e_k,
                 mu=float(mu_guess),
                 kBT=kbt0,
                 delta=delta,
-                spin_shift=1,
+                spin_shift=spin_shift,
                 dist_type=d0,
                 U=U0,
+                n_kd=is_nkd,
             )
             plt.close("all")
             qc1, qc2 = st.columns(2)
             qw = float(qc1.slider("Quick view width", 4.0, 20.0, 7.0, 0.5))
             qh = float(qc2.slider("Quick view height", 3.0, 14.0, 5.0, 0.5))
-            lim2d = st.checkbox("Quick view: custom color limits", value=False)
+
+            show_mode = st.radio(
+                "Display mode",
+                ["2D Map", "Horizontal Cut (k_y=0)", "Diagonal Cut"],
+                index=0,
+                horizontal=True,
+                key="occ_view_quick",
+            )
+
+            lim2d = st.checkbox("Quick view: custom color/Y limits", value=False)
             vmin = vmax = None
             if lim2d:
                 cl1, cl2 = st.columns(2)
-                vmin = float(cl1.number_input("Color min", value=0.0))
-                vmax = float(cl2.number_input("Color max", value=1.0))
+                vmin = float(cl1.number_input("Min", value=0.0))
+                vmax = float(cl2.number_input("Max", value=1.0))
             fig, ax = plt.subplots(figsize=(qw, qh))
             if meta["dim"] == "2D" and ky is not None:
-                im = ax.imshow(
-                    occ,
-                    extent=[-np.pi, np.pi, -np.pi, np.pi],
-                    origin="lower",
-                    aspect="auto",
-                    vmin=vmin,
-                    vmax=vmax,
-                )
-                fig.colorbar(im, ax=ax, label="occupancy (one spin)")
-                ax.set_xlabel(r"$k_x$")
-                ax.set_ylabel(r"$k_y$")
+                if show_mode == "2D Map":
+                    im = ax.imshow(
+                        occ,
+                        extent=[-np.pi, np.pi, -np.pi, np.pi],
+                        origin="lower",
+                        aspect="auto",
+                        vmin=vmin,
+                        vmax=vmax,
+                    )
+                    fig.colorbar(im, ax=ax, label=spin_choice)
+                    ax.set_xlabel(r"$k_x$")
+                    ax.set_ylabel(r"$k_y$")
+                else:
+                    if show_mode == "Horizontal Cut (k_y=0)":
+                        mid_idx = occ.shape[0] // 2
+                        y_vals = occ[mid_idx, :]
+                        ax.set_xlabel(r"$k_x$ (at $k_y=0$)")
+                    else:
+                        y_vals = np.diag(occ)
+                        ax.set_xlabel(r"Diagonal $k$")
+
+                    ax.plot(
+                        kx if kx is not None else np.linspace(-np.pi, np.pi, len(y_vals)),
+                        y_vals,
+                        lw=2,
+                        label=spin_choice,
+                    )
+                    ax.set_ylabel("occupancy")
+                    if vmin is not None and vmax is not None:
+                        ax.set_ylim(vmin, vmax)
+                    ax.legend()
             else:
                 ax.plot(kx, np.diag(occ) if occ.ndim == DIM_2D else occ, lw=2)
                 ax.set_xlabel(r"$k$")
@@ -568,38 +615,81 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                     st.error("Could not find μ for this point in results.")
                 else:
                     st.caption(f"Using μ = {mu_val:.6g}")
+
+                    spin_choice = st.radio(
+                        "Spin channel",
+                        ["up (+1)", "down (-1)", "nkd"],
+                        index=0,
+                        horizontal=True,
+                        key="occ_spin",
+                    )
+                    is_nkd = "nkd" in spin_choice
+                    spin_shift = -1 if "up" in spin_choice else 1
+
                     delta = 0.5 * 2.0 * 1.0 * float(h2)
                     occ = distribution(
                         e_k,
                         mu=float(mu_val),
                         kBT=float(k2),
                         delta=delta,
-                        spin_shift=1,
+                        spin_shift=spin_shift,
                         dist_type=DIST_MAP[str(d_pick)],
                         U=float(u2),
+                        n_kd=is_nkd,
                     )
                     plt.close("all")
                     c1, c2 = st.columns(2)
-                    w = float(c1.slider("2D width", 4.0, 28.0, 10.0, 0.5))
-                    h = float(c2.slider("2D height", 3.0, 20.0, 7.0, 0.5))
-                    lim2d = st.checkbox("Custom color limits", value=False, key="occ2d_lim")
+                    w = float(c1.slider("Chart width", 4.0, 28.0, 10.0, 0.5))
+                    h = float(c2.slider("Chart height", 3.0, 20.0, 7.0, 0.5))
+
+                    show_mode = st.radio(
+                        "Display mode",
+                        ["2D Map", "Horizontal Cut (k_y=0)", "Diagonal Cut"],
+                        index=0,
+                        horizontal=True,
+                        key="occ_view",
+                    )
+
+                    lim2d = st.checkbox("Custom color/Y limits", value=False, key="occ2d_lim")
                     vmin = vmax = None
                     if lim2d:
                         cl1, cl2 = st.columns(2)
-                        vmin = float(cl1.number_input("Color min", value=0.0, key="occ2d_vmin"))
-                        vmax = float(cl2.number_input("Color max", value=1.0, key="occ2d_vmax"))
+                        vmin = float(cl1.number_input("Min", value=0.0, key="occ2d_vmin"))
+                        vmax = float(cl2.number_input("Max", value=1.0, key="occ2d_vmax"))
+
                     fig, ax = plt.subplots(figsize=(w, h))
-                    im = ax.imshow(
-                        occ,
-                        extent=[-np.pi, np.pi, -np.pi, np.pi],
-                        origin="lower",
-                        aspect="auto",
-                        vmin=vmin,
-                        vmax=vmax,
-                    )
-                    fig.colorbar(im, ax=ax, label="occupancy (one spin)")
-                    ax.set_xlabel(r"$k_x$")
-                    ax.set_ylabel(r"$k_y$")
+                    if show_mode == "2D Map":
+                        im = ax.imshow(
+                            occ,
+                            extent=[-np.pi, np.pi, -np.pi, np.pi],
+                            origin="lower",
+                            aspect="auto",
+                            vmin=vmin,
+                            vmax=vmax,
+                        )
+                        fig.colorbar(im, ax=ax, label=spin_choice)
+                        ax.set_xlabel(r"$k_x$")
+                        ax.set_ylabel(r"$k_y$")
+                    else:
+                        if show_mode == "Horizontal Cut (k_y=0)":
+                            mid_idx = occ.shape[0] // 2
+                            y_vals = occ[mid_idx, :]
+                            ax.set_xlabel(r"$k_x$ (at $k_y=0$)")
+                        else:
+                            y_vals = np.diag(occ)
+                            ax.set_xlabel(r"Diagonal $k$")
+
+                        ax.plot(
+                            kx if kx is not None else np.linspace(-np.pi, np.pi, len(y_vals)),
+                            y_vals,
+                            lw=2,
+                            label=spin_choice,
+                        )
+                        ax.set_ylabel("occupancy")
+                        if vmin is not None and vmax is not None:
+                            ax.set_ylim(vmin, vmax)
+                        ax.legend()
+
                     ax.set_title(f"{d_pick}, n={n2:.6g}, kBT={k2:.6g}, H_a={h2:.6g}, U={u2:.6g}")
                     st.pyplot(fig, clear_figure=True)
 

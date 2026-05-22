@@ -72,7 +72,14 @@ def n_kd(
         match distro_str:
             case "HUBBARD":
                 n_kd = distribution(
-                    E, mu, k_BT, delta=delta, spin_shift=-1, dist_type=distro_str, U=row_U, n_kd=True
+                    E,
+                    mu,
+                    k_BT,
+                    delta=delta,
+                    spin_shift=-1,
+                    dist_type=distro_str,
+                    U=row_U,
+                    n_kd=True,
                 )
             case _:
                 n_up = distribution(
