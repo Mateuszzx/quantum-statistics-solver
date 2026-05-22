@@ -18,7 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from gui.lattice import build_dispersion
-clfrom gui.panel_plot import mu_for_point, panel_plot
+from gui.panel_plot import mu_for_point, panel_plot
 from gui.paths import quantum_statistics_solver_root
 from gui.scientific_plot import ScientificPlotter
 from gui.solver_options import build_brent_options, build_sa_options
@@ -572,29 +572,30 @@ def main() -> None:  # noqa: PLR0912, PLR0915
 
                 names = [d.name if hasattr(d, "name") else str(d) for d in distros]
                 plt.close("all")
-                plot_distributions_notebook_style(
-                    Plotter=plotterCls,
-                    e_k=e_k,
-                    kx=kx,
-                    ky=ky if ky is not None else kx,
-                    dim=2 if meta["dim"] == "2D" else 1,
-                    n_list=[float(x) for x in n_pick],
-                    kBT_list=[float(x) for x in k_pick],
-                    H=H_plot,
-                    U=U_plot,
-                    n_kd=n_kd_flag,
-                    t_prim=float(meta["t_prim"]),
-                    distributions=names,
-                    slice_type=slice_type,
-                    ylims=(float(y0), float(y1)),
-                    figsize_1d=(float(fig_w), float(fig_h)),
-                    figsize_2d=(float(fig2_w), float(fig2_h)),
-                )
-                show_current_figure(st)
-                st.caption(
-                    f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
-                    f"H_a={H_plot:.6g}, U={U_plot:.6g}, slice={slice_type}."
-                )
+
+                plotter = ScientificPlotter()
+                try:
+                    plotter.plot_energy_distribution_1d(
+                        e_k=e_k,
+                        slice_type=slice_type,
+                        dim=2 if meta["dim"] == "2D" else 1,
+                        kx=kx,
+                        n=[float(x) for x in n_pick],
+                        kBTs=[float(x) for x in k_pick],
+                        H=H_plot,
+                        U=float(U_plot),
+                        n_kd=n_kd_flag,
+                        distributions=names,
+                        ylims=(float(y0), float(y1)),
+                        figsize=(float(fig_w), float(fig_h)),
+                    )
+                    show_current_figure(st)
+                    st.caption(
+                        f"Dystrybucje: n={len(n_pick)} punktow, kBT={len(k_pick)} punktow, "
+                        f"H_a={H_plot:.6g}, U={float(U_plot):.6g}, slice={slice_type}."
+                    )
+                except Exception as e:
+                    st.error(f"Error drawing 1D cuts: {e}")
 
             if meta["dim"] == "2D" and ky is not None:
                 st.divider()
@@ -605,17 +606,14 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                 ]
                 d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="occ2d_d")
                 n2 = float(st.selectbox("n", options=list(n_arr.astype(float)), key="occ2d_n"))
-                k2 = float(
-                    st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k")
-                )
+                k2 = float(st.selectbox("$k_BT$", options=list(kBT_arr.astype(float)), key="occ2d_k"))
                 h2 = float(st.selectbox("H_a", options=list(H_arr.astype(float)), key="occ2d_h"))
                 u2 = float(st.selectbox("U", options=list(U_arr.astype(float)), key="occ2d_u"))
-                mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2, U=u2)
+                mu_val = mu_for_point(mu_df, distro=str(d_pick), n=n2, kBT=k2, H_a=h2, U=U_plot)
                 if mu_val is None:
                     st.error("Could not find μ for this point in results.")
                 else:
                     st.caption(f"Using μ = {mu_val:.6g}")
-
                     spin_choice = st.radio(
                         "Spin channel",
                         ["up (+1)", "down (-1)", "nkd"],
