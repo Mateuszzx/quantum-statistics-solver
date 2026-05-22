@@ -8,6 +8,7 @@ import numpy as np
 import streamlit as st
 
 from gui.constants import SWEEP_VAR_LABELS
+from gui.defaults import cfg
 from gui.derived_quantities import (
     derived_compute_summary,
     derived_display_names,
@@ -114,19 +115,32 @@ def view_panels() -> None:  # noqa: PLR0912, PLR0915
     U_arr = meta["U_vals"]
 
     st.header("Sweep panels")
+    p_cfg = cfg("panels")
+    sweep_vars = ["n", "k_BT", "H_a", "U"]
+    panel_opts = ["(none)", *sweep_vars]
     q_name = st.selectbox(
-        "Quantity", options=derived_display_names(), index=0, key="panel_qty"
+        "Quantity",
+        options=derived_display_names(),
+        index=int(p_cfg["quantity_index"]),
+        key="panel_qty",
     )
     x_var = st.selectbox(
-        "X axis variable", options=["n", "k_BT", "H_a", "U"], index=0, key="panel_x"
+        "X axis variable",
+        options=sweep_vars,
+        index=int(p_cfg["x_var_index"]),
+        key="panel_x",
     )
     x_scale = st.radio(
-        "X scale", ["linear", "log"], horizontal=True, index=0, key="panel_xscale"
+        "X scale",
+        ["linear", "log"],
+        horizontal=True,
+        index=int(p_cfg["x_scale_index"]),
+        key="panel_xscale",
     )
     panel_var_raw = st.selectbox(
         "Sweep in panels",
-        options=["(none)", "n", "k_BT", "H_a", "U"],
-        index=2,
+        options=panel_opts,
+        index=int(p_cfg["panel_var_index"]),
         key="panel_pan",
     )
     panel_var = None if panel_var_raw == "(none)" else str(panel_var_raw)

@@ -7,6 +7,13 @@ Run it from the ``quantum-statistics-solver/`` directory::
 
    streamlit run gui/web_app.py
 
+Defaults
+--------
+
+Widget defaults (lattice ``N``, hopping ``t``, sweep grids, solver Brent/SA, plot sizes, …)
+live in ``gui/defaults.yaml``. Edit that file and rerun the app — no Python changes needed.
+Override the path with ``QSS_GUI_DEFAULTS=/path/to/my_defaults.yaml`` if you want several presets.
+
 Overview
 --------
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from gui.defaults import cfg
 from gui.paths import quantum_statistics_solver_root
 from gui.view_distributions import view_distributions
 from gui.view_panels import view_panels
@@ -31,7 +32,7 @@ def main() -> None:
     view = st.sidebar.radio(
         "View",
         ["Panels", "Distributions"],
-        index=0,
+        index=int(cfg("app", "default_view_index")),
         horizontal=True,
         key="main_view",
     )

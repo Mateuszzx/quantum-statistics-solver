@@ -8,9 +8,17 @@ import numpy as np
 import streamlit as st
 from numpy.typing import NDArray
 
+from gui.defaults import cfg
 from gui.sweep_grids import values_from_input
 
 SWEEP_MODES = ("Scalar", "List", "Linspace", "Logspace")
+
+_SWEEP_LABELS: dict[str, str] = {
+    "n": r"**Band filling** $n$",
+    "k_BT": r"**Temperature** $k_B T / |t|$",
+    "H_a": r"**Field** $H_a$ (T)",
+    "U": r"**Hubbard** $U / |t|$",
+}
 
 
 @dataclass(frozen=True)
@@ -29,11 +37,36 @@ class SweepParamSpec:
     scalar_step: float | None = None
 
 
+def _sweep_spec_from_yaml(key: str) -> SweepParamSpec:
+    s = cfg("sweeps", key)
+    scalar_min = float(s["scalar_min"]) if "scalar_min" in s else None
+    scalar_max = float(s["scalar_max"]) if "scalar_max" in s else None
+    scalar_step = float(s["scalar_step"]) if "scalar_step" in s else None
+    return SweepParamSpec(
+        label=_SWEEP_LABELS[key],
+        scalar_default=float(s["scalar"]),
+        list_default=str(s["list"]),
+        grid_min=float(s["grid_min"]),
+        grid_max=float(s["grid_max"]),
+        grid_points=int(s["grid_points"]),
+        mode_default=str(s["mode"]),
+        scalar_min=scalar_min,
+        scalar_max=scalar_max,
+        scalar_step=scalar_step,
+    )
+
+
+def panel_sweep_specs() -> dict[str, SweepParamSpec]:
+    """Sweep specs built from ``defaults.yaml``."""
+    return {key: _sweep_spec_from_yaml(key) for key in ("n", "k_BT", "H_a", "U")}
+
+
 def parameter_input(
     *,
     param_key: str,
     spec: SweepParamSpec,
     container: st.delta_generator.DeltaGenerator,
+    grid_points_max: int,
 ) -> NDArray[np.float64]:
     """Render sweep controls for one parameter; return the value array."""
     container.markdown(spec.label)
@@ -74,7 +107,7 @@ def parameter_input(
             container.number_input(
                 "Points",
                 min_value=1,
-                max_value=500,
+                max_value=int(grid_points_max),
                 value=spec.grid_points,
                 step=1,
                 key=f"{param_key}_count",
@@ -103,59 +136,20 @@ def parameter_input(
     return vals
 
 
-PANEL_SWEEP_SPECS: dict[str, SweepParamSpec] = {
-    "n": SweepParamSpec(
-        label=r"**Band filling** $n$",
-        scalar_default=0.5,
-        list_default="0.1, 0.3, 0.5, 0.7, 0.9",
-        grid_min=0.1,
-        grid_max=0.99,
-        grid_points=20,
-        mode_default="Linspace",
-        scalar_min=0.001,
-        scalar_max=1.0,
-        scalar_step=0.01,
-    ),
-    "k_BT": SweepParamSpec(
-        label=r"**Temperature** $k_B T / |t|$",
-        scalar_default=0.1,
-        list_default="0.01, 0.05, 0.1, 0.5, 1.0",
-        grid_min=0.01,
-        grid_max=1.0,
-        grid_points=4,
-        mode_default="Logspace",
-    ),
-    "H_a": SweepParamSpec(
-        label=r"**Field** $H_a$ (T)",
-        scalar_default=0.0,
-        list_default="0.0, 1.0, 2.0",
-        grid_min=0.0,
-        grid_max=0.0,
-        grid_points=1,
-        mode_default="Scalar",
-    ),
-    "U": SweepParamSpec(
-        label=r"**Hubbard** $U / |t|$",
-        scalar_default=0.0,
-        list_default="0.0, 2.0, 4.0, 8.0",
-        grid_min=0.0,
-        grid_max=0.0,
-        grid_points=1,
-        mode_default="Scalar",
-    ),
-}
-
 def experiment_parameter_sweeps(
     container: st.delta_generator.DeltaGenerator,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Configure n, k_BT, H_a, and U sweeps for the Panels experiment."""
+    specs = panel_sweep_specs()
+    grid_max = int(cfg("sweeps", "grid_points_max"))
     sweeps: dict[str, NDArray[np.float64]] = {}
-    for key, spec in PANEL_SWEEP_SPECS.items():
+    for key, spec in specs.items():
         title = key if key != "k_BT" else r"$k_B T/|t|$"
         with container.expander(title, expanded=False) as exp:
             sweeps[key] = parameter_input(
                 param_key=f"sweep_{key}",
                 spec=spec,
                 container=exp,
+                grid_points_max=grid_max,
             )
     return sweeps["n"], sweeps["k_BT"], sweeps["H_a"], sweeps["U"]

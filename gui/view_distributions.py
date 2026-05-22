@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from gui.constants import DIST_MAP
+from gui.defaults import cfg
 from gui.lattice import build_dispersion
 from gui.mu_solver import solve_mu_from_n
 from gui.occupancy_plot import plot_occupancy_map
@@ -21,19 +22,21 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
     distros = sidebar_distros(key_prefix="dist_")
 
     st.sidebar.subheader("State point")
+    dv = cfg("distributions_view")
+    n_cfg = dv["n"]
     n_val = float(
         st.sidebar.number_input(
             r"Band filling $n$",
-            min_value=0.001,
-            max_value=1.0,
-            value=0.5,
-            step=0.01,
+            min_value=float(n_cfg["min"]),
+            max_value=float(n_cfg["max"]),
+            value=float(n_cfg["value"]),
+            step=float(n_cfg["step"]),
             key="dist_n",
         )
     )
-    kbt = float(st.sidebar.number_input(r"$k_B T / |t|$", value=0.1, key="dist_kbt"))
-    h_a = float(st.sidebar.number_input(r"$H_a$ (T)", value=0.0, key="dist_ha"))
-    u_val = float(st.sidebar.number_input(r"$U / |t|$", value=0.0, key="dist_u"))
+    kbt = float(st.sidebar.number_input(r"$k_B T / |t|$", value=float(dv["k_BT"]), key="dist_kbt"))
+    h_a = float(st.sidebar.number_input(r"$H_a$ (T)", value=float(dv["H_a"]), key="dist_ha"))
+    u_val = float(st.sidebar.number_input(r"$U / |t|$", value=float(dv["U"]), key="dist_u"))
 
     if not distros:
         st.info("Select at least one distribution in the sidebar.")
@@ -101,27 +104,35 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
             "Uses `ScientificPlotter` — each curve fixes **n** and **$k_B T$** "
             "(μ solved per point). Independent of the Panels experiment."
         )
-        slice_type = st.selectbox("1D cut", ["horizontal", "diagonal"], index=0, key="dist_slice")
+        slice_type = st.selectbox(
+            "1D cut",
+            ["horizontal", "diagonal"],
+            index=int(dv["slice_index"]),
+            key="dist_slice",
+        )
         n_text = st.text_input(
             "n values (comma-separated)",
-            value="0.1, 0.5, 0.9",
+            value=str(dv["n_list"]),
             key="dist_n_list",
         )
         kbt_text = st.text_input(
             "$k_BT$ values (comma-separated)",
-            value="0.01, 0.1",
+            value=str(dv["kbt_list"]),
             key="dist_kbt_list",
         )
-        n_pick = parse_float_list(n_text) or [0.1, 0.5, 0.9]
-        k_pick = parse_float_list(kbt_text) or [0.01, 0.1]
+        n_pick = parse_float_list(n_text) or parse_float_list(str(dv["n_list"]))
+        k_pick = parse_float_list(kbt_text) or parse_float_list(str(dv["kbt_list"]))
         H_plot = float(st.number_input("$H_a$ for 1D plot", value=h_a, key="dist_h_plot"))
         U_plot = float(st.number_input("$U$ for 1D plot", value=u_val, key="dist_u_plot"))
         n_kd_flag = st.checkbox(
-            "n_kd channel / correlator view (Hubbard tooling)", value=False, key="dist_nkd"
+            "n_kd channel / correlator view (Hubbard tooling)",
+            value=bool(dv["n_kd"]),
+            key="dist_nkd",
         )
-        y0, y1 = st.slider("y axis (occupancy)", -0.05, 2.2, (-0.05, 2.2), key="dist_ylim")
-        fig_w = st.slider("Figure width (1D)", 10, 48, 30, key="dist_fig_w")
-        fig_h = st.slider("Figure height (1D)", 2, 8, 4, key="dist_fig_h")
+        ylim = tuple(float(x) for x in dv["ylim"])
+        y0, y1 = st.slider("y axis (occupancy)", -0.05, 2.2, ylim, key="dist_ylim")
+        fig_w = st.slider("Figure width (1D)", 10, 48, int(dv["fig_width"]), key="dist_fig_w")
+        fig_h = st.slider("Figure height (1D)", 2, 8, int(dv["fig_height"]), key="dist_fig_h")
 
         if not n_pick or not k_pick:
             st.error("Enter at least one **n** and one **$k_BT$** value.")

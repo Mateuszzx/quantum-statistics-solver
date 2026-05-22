@@ -7,6 +7,7 @@ import numpy as np
 import streamlit as st
 
 from gui.constants import DIM_2D
+from gui.defaults import cfg
 from qss.distributions import DistType, distribution
 
 
@@ -40,9 +41,10 @@ def plot_occupancy_map(  # noqa: PLR0913
         n_kd=is_nkd,
     )
     plt.close("all")
+    om = cfg("occupancy_map")
     c1, c2 = st.columns(2)
-    w = float(c1.slider("Chart width", 4.0, 28.0, 10.0, 0.5, key="dist_map_w"))
-    h = float(c2.slider("Chart height", 3.0, 20.0, 7.0, 0.5, key="dist_map_h"))
+    w = float(c1.slider("Chart width", 4.0, 28.0, float(om["width"]), 0.5, key="dist_map_w"))
+    h = float(c2.slider("Chart height", 3.0, 20.0, float(om["height"]), 0.5, key="dist_map_h"))
 
     show_mode = st.radio(
         "Display mode",
@@ -56,8 +58,8 @@ def plot_occupancy_map(  # noqa: PLR0913
     vmin = vmax = None
     if lim2d:
         cl1, cl2 = st.columns(2)
-        vmin = float(cl1.number_input("Min", value=0.0, key="dist_map_vmin"))
-        vmax = float(cl2.number_input("Max", value=1.0, key="dist_map_vmax"))
+        vmin = float(cl1.number_input("Min", value=float(om["color_min"]), key="dist_map_vmin"))
+        vmax = float(cl2.number_input("Max", value=float(om["color_max"]), key="dist_map_vmax"))
 
     fig, ax = plt.subplots(figsize=(w, h))
     if dim == "2D" and ky is not None and show_mode == "2D Map":

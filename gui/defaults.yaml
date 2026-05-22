@@ -1,0 +1,120 @@
+# GUI default values — edit here to change Streamlit widgets without touching Python.
+# Restart the app (or use Streamlit "Rerun") after saving.
+
+app:
+  default_view_index: 0  # 0 = Panels, 1 = Distributions
+
+lattice:
+  N:
+    value: 100
+    min: 10
+    max: 4096
+    step: 10
+  t: -1.0
+  t_prim: 0.0
+
+distributions:
+  default: [FD, NFL, SSL, HUBBARD]
+
+solver:
+  algorithm_index: 0  # 0 = Brent, 1 = SA
+  search:
+    a0: -10.0
+    b0: 10.0
+    random_guess: false
+    x0: 0.0
+  brent:
+    abs_tol: 1.0e-9
+    rel_tol: 1.0e-6
+    max_iters: 5000
+    expand_factor: 2.0
+    max_expands: 164
+    initial_step: 1.0
+    bracketer: Expansion  # Expansion | Bisection
+  sa:
+    max_iters: 50000
+    min_iters: 2000
+    stall_iters: 1000
+    T0: 1000.0
+    T_min: 1.0e-9
+    alpha: 0.999
+    step_decay: 0.999
+    step_sigma: 5.0
+    schedule: Exponential
+    scale_sigma_by_t: true
+    reflect_bounds: true
+
+# Experiment parameter sweeps (Panels sidebar)
+sweeps:
+  grid_points_max: 500
+  n:
+    scalar: 0.5
+    list: "0.1, 0.3, 0.5, 0.7, 0.9"
+    grid_min: 0.1
+    grid_max: 0.99
+    grid_points: 20
+    mode: Linspace
+    scalar_min: 0.001
+    scalar_max: 1.0
+    scalar_step: 0.01
+  k_BT:
+    scalar: 0.1
+    list: "0.01, 0.05, 0.1, 0.5, 1.0"
+    grid_min: 0.01
+    grid_max: 1.0
+    grid_points: 4
+    mode: Logspace
+  H_a:
+    scalar: 0.0
+    list: "0.0, 1.0, 2.0"
+    grid_min: 0.0
+    grid_max: 0.0
+    grid_points: 1
+    mode: Scalar
+  U:
+    scalar: 0.0
+    list: "0.0, 2.0, 4.0, 8.0"
+    grid_min: 0.0
+    grid_max: 0.0
+    grid_points: 1
+    mode: Scalar
+
+panels:
+  quantity_index: 0
+  x_var_index: 0
+  x_scale_index: 0  # 0 = linear, 1 = log
+  panel_var_index: 2  # (none)=0, n=1, k_BT=2, H_a=3, U=4
+
+plot:
+  fig_width: 10.0
+  fig_height: 6.0
+  cols: 2
+  x_limits_enabled: false
+  x_min: 0.0
+  x_max: 1.0
+  y_limits_enabled: false
+  y_min: 0.0
+  y_max: 1.0
+
+distributions_view:
+  n:
+    value: 0.5
+    min: 0.001
+    max: 1.0
+    step: 0.01
+  k_BT: 0.1
+  H_a: 0.0
+  U: 0.0
+  slice_index: 0  # horizontal | diagonal
+  n_list: "0.1, 0.5, 0.9"
+  kbt_list: "0.01, 0.1"
+  n_kd: false
+  ylim: [-0.05, 2.2]
+  fig_width: 30
+  fig_height: 4
+
+occupancy_map:
+  width: 10.0
+  height: 7.0
+  color_min: 0.0
+  color_max: 1.0
