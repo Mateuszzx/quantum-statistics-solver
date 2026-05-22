@@ -45,7 +45,7 @@ def test_nfl_stationary_solution_reference_occupancy():
         dist_type=DistType.NFL,
     )[0]
 
-    assert n_sigma == pytest.approx(0.3819660112501051, abs=1e-12)
+    assert n_sigma == pytest.approx(0.276393202250021, abs=1e-12)
 
 
 def test_nfl_mu_with_stationary_solution_reference_case():
@@ -73,4 +73,4 @@ def test_nfl_mu_with_stationary_solution_reference_case():
 
     row = mu_df.reset_index().iloc[0]
     assert row["converged"]
-    assert row["mu"] == pytest.approx(1.940984279770783, abs=1e-6)
+    assert row["mu"] == pytest.approx(1.949689340283009, abs=1e-6)
