@@ -91,11 +91,7 @@ def run_experiment(  # noqa: PLR0913
     logs_path = Path(logs_dir)
     logs_path.mkdir(parents=True, exist_ok=True)
 
-    if isinstance(U_vals, (int, float)):
-        U_iter = [float(U_vals)]
-    else:
-        U_iter = list(U_vals)
-
+U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)      
     results: list[pd.DataFrame] = []
     total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(n_vals) * len(U_iter)
     done = 0
