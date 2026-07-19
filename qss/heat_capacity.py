@@ -32,7 +32,7 @@ def heat_capacity(
 
     # 3. Sort values. np.gradient strictly requires ascending coordinates!
     group_cols = ["distro", "n", "H_a", "U"]
-    df_work = df_work.sort_values(group_cols + ["k_BT"])
+    df_work = df_work.sort_values([*group_cols, "k_BT"])
 
     # 4. Helper function to compute the derivative and return a mapped Series
     def compute_cv(group: pd.DataFrame) -> pd.Series:
