@@ -1,7 +1,3 @@
-"""
-Heat capacity calculation module.
-"""
-
 from __future__ import annotations
 
 import numpy as np
@@ -20,73 +16,52 @@ def heat_capacity(
     r"""
     Compute specific heat capacity for each state in the DataFrame.
     C = T * (\partial S / \partial T) = k_B T * (\partial S / \partial k_B T)
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame containing chemical potential and entropy results.
-        Expected index levels: 'distro', 'n', 'k_BT', 'H_a'.
-    E : np.ndarray
-        Energy dispersion array.
-    g : float
-        Landé g-factor.
-    muB_eV_per_T : float
-        Bohr magneton in eV/T.
-    U : float
-        On-site interaction energy.
-
-    Returns
-    -------
-    pd.DataFrame
-        Original DataFrame with a new 'heat_capacity' column.
     """
     if "entropy" not in df.columns:
         df = calculate_entropy(df, E, g=g, muB_eV_per_T=muB_eV_per_T)
 
-    # We need to sort by the parameters to properly compute the derivative
-    # Usually we take derivative w.r.t k_BT keeping n, H_a, distro, U constant
+    # 1. Create a working copy and save the exact original row order
+    df_work = df.copy()
+    df_work["_orig_order"] = np.arange(len(df_work))
 
-    # Store original row order/index
-    original_idx = df.index
+    # 2. Flatten the index
+    df_work = df_work.reset_index()
 
-    # Reset index to easily group and sort (if index is MultiIndex)
-    is_multiindex = isinstance(df.index, pd.MultiIndex)
-    df_reset = df.reset_index()
+    if "U" not in df_work.columns:
+        df_work["U"] = U
 
-    if "U" not in df_reset.columns:
-        df_reset["U"] = U
+    # 3. Sort values. np.gradient strictly requires ascending coordinates!
+    group_cols = ["distro", "n", "H_a", "U"]
+    df_work = df_work.sort_values(group_cols + ["k_BT"])
 
-    # Group by the ones that should be constant
-    group_cols = ["distro", "n", "H_a"]
-    if "U" in df_reset.columns:
-        group_cols.append("U")
+    # 4. Helper function to compute the derivative and return a mapped Series
+    def compute_cv(group: pd.DataFrame) -> pd.Series:
+        k = group["k_BT"].values.astype(float)
+        S = group["entropy"].values.astype(float)
 
-    # Calculate heat capacity
-    # C = k_BT * dS / d(k_BT) # noqa ERA001
-    heat_cap_list = np.zeros(len(df_reset))
+        if len(k) > 1:
+            # SAFETY CHECK: Prevent division by zero if duplicate k_BT exist
+            # by adding a microscopic offset to duplicates
+            if np.any(np.diff(k) == 0):
+                k = k + np.arange(len(k)) * 1e-12
 
-    for _, group in df_reset.groupby(group_cols):
-        # Sort by k_BT to compute derivative
-        sorted_group = group.sort_values("k_BT")
-        indices = sorted_group.index
-        k_BT_vals = sorted_group["k_BT"].values
-        S_vals = sorted_group["entropy"].values
-
-        if len(k_BT_vals) > 1:
-            # np.gradient handles non-uniform spacing
-            dS_dkBT = np.gradient(S_vals, k_BT_vals)
-            c_v = k_BT_vals * dS_dkBT
+            cv = k * np.gradient(S, k)
         else:
-            # Not enough points to compute derivative
-            c_v = np.zeros_like(k_BT_vals)
+            cv = np.zeros_like(k)
 
-        heat_cap_list[indices] = c_v
+        # Return a Series tied specifically to this group's index
+        return pd.Series(cv, index=group.index)
 
-    df_reset["heat_capacity"] = heat_cap_list
+    # 5. Apply the calculation. Because it returns a Series, it slots perfectly into the column.
+    df_work["heat_capacity"] = df_work.groupby(group_cols, group_keys=False).apply(compute_cv)
 
-    if is_multiindex:
-        df_reset = df_reset.set_index(original_idx.names)
+    # 6. Restore the exact original row order using our tracker
+    df_work = df_work.sort_values("_orig_order").drop(columns=["_orig_order"])
 
-    df["heat_capacity"] = df_reset["heat_capacity"].values
+    # 7. Restore the original index cleanly
+    if isinstance(df.index, pd.MultiIndex):
+        df_work = df_work.set_index(df.index.names)
+    else:
+        df_work.index = df.index
 
-    return df
+    return df_work

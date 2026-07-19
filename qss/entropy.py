@@ -111,7 +111,6 @@ def calculate_entropy_k(
             term1 = n_up - n_kd
             term2 = n_down - n_kd
             term3 = 1 - n_up - n_down + n_kd
-
             return np.array(
                 -term1 * safe_log(term1)
                 - term2 * safe_log(term2)
