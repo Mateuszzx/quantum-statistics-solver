@@ -62,7 +62,7 @@ inline double hubbard_from_x(double x, double x_prim, double u, bool n_kd = fals
 double hubbard_distribution(double e_k, double mu, double kBT, double delta, int spin_shift, double U, bool n_kd) noexcept
 {
     // Pass U/kBT as the scaled interaction parameter
-    return hubbard_from_x((e_k + (spin_shift * delta) - mu) / kBT, (e_k - (spin_shift * delta) - mu) / kBT, U / (2*kBT), n_kd);
+    return hubbard_from_x((e_k + (spin_shift * delta) - mu) / kBT, (e_k - (spin_shift * delta) - mu) / kBT, U / (kBT), n_kd);
 }
 
 } // namespace qss::detail
