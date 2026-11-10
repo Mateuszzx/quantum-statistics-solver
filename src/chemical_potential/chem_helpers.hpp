@@ -45,9 +45,12 @@ inline Mat distribution_total(const Mat& E, double mu, double kBT,
 
         auto spin_up = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist);
         auto spin_dn = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_DN_SHIFT), U, dist);
+        // auto n_kd = std::optional<Vec>{}; // Left empty by the inner redeclaration.
         if (!spin_up || !spin_dn)
             throw std::runtime_error("distribution() failed");
-
+        // if (dist == DistType::HUBBARD){
+            // auto n_kd = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist, true); // Shadows the outer n_kd with a new local variable.
+        // }
         // No splitting: copy f(E) results to output
         for (std::size_t i = 0; i < nx; ++i) {
             result = std::clamp((*spin_up)[i], 0.0, 1.0) + std::clamp((*spin_dn)[i], 0.0, 1.0);
@@ -55,6 +58,10 @@ inline Mat distribution_total(const Mat& E, double mu, double kBT,
             {
                 out[j][i] = result;
             }
+            // else if (dist == DistType::HUBBARD) // Unreachable: HUBBARD is already handled above.
+            // {
+                // out[j][i] = result - std::clamp((*n_kd)[i], 0.0, 1.0); // Subtracting doublons undercounts electrons.
+            // }
             else
             {
                 out[j][i] = std::clamp(result, 0.0, 1.0);
