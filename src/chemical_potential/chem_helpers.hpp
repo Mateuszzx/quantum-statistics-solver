@@ -45,7 +45,7 @@ inline Mat distribution_total(const Mat& E, double mu, double kBT,
 
         auto spin_up = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_UP_SHIFT), U, dist);
         auto spin_dn = qss::distribution(E[j], mu, kBT, delta, static_cast<int>(SPIN_DN_SHIFT), U, dist);
-        auto n_kd = std::optional<Vec>{};
+        std::optional<Vec> n_kd;  // Initialize n_kd as an empty optional
         if (!spin_up || !spin_dn)
             throw std::runtime_error("distribution() failed");
         if (dist == DistType::HUBBARD){

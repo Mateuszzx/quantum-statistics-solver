@@ -57,13 +57,15 @@ and also provides download buttons for derived quantities in the Panels tab.
 - C++17 compatible compiler
 - CMake >= 3.15
 - Python >= 3.11
+- [uv](https://docs.astral.sh/uv/)
 
 ### Install from Source
 
 ```bash
 git clone https://github.com/Mateuszzx/quantum-statistics-solver.git
 cd quantum-statistics-solver
-pip install -e .
+uv venv
+uv pip install --python .venv/bin/python -e .
 ```
 
 ## Usage
@@ -116,10 +118,11 @@ This project uses a `Makefile` to manage development tasks.
 
 ### Setup
 
+Requires [uv](https://docs.astral.sh/uv/).
+
 ```bash
-make venv
-source .venv/bin/activate
 make dev-install
+source .venv/bin/activate
 ```
 
 ### Testing & Coverage

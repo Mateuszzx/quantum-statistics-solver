@@ -26,10 +26,12 @@ BUILD_DIR ?= build
 SRC_DIR   ?= src
 DOCS_DIR  ?= docs
 
-# Python configuration
+# Python configuration. uv environments do not include pip.
 VENV_DIR  ?= .venv
 PYTHON    ?= $(VENV_DIR)/bin/python
-PIP       ?= $(VENV_DIR)/bin/pip
+UV        ?= uv
+# Interpreter for a newly created environment, for example UV_PYTHON=3.12.
+UV_PYTHON ?=
 
 # Documentation output
 DOCS_HTML := $(BUILD_DIR)/docs/html
@@ -88,20 +90,23 @@ install: ## Install system dependencies (Debian/Ubuntu only)
         clang-format clang-tidy doxygen graphviz \
         lcov gcovr
 
-venv: ## Create Python virtual environment
-	@echo "[info] Creating virtual environment: $(VENV_DIR)"
+venv: ## Create a uv virtual environment
+	@command -v $(UV) >/dev/null 2>&1 || { \
+        echo "[error] uv is not on PATH. Install it from https://docs.astral.sh/uv/"; \
+        exit 1; \
+    }
 	@if [ ! -x "$(PYTHON)" ]; then \
-        python3 -m venv "$(VENV_DIR)"; \
-        $(PIP) install --upgrade pip wheel setuptools nanobind; \
+        echo "[info] Creating virtual environment: $(VENV_DIR)"; \
+        $(UV) venv $(if $(UV_PYTHON),--python "$(UV_PYTHON)",) "$(VENV_DIR)"; \
     fi
 
 clean-venv:  ## Remove Python virtual environment
 	@echo "[info] Removing virtual environment: $(VENV_DIR)"
 	@rm -rf "$(VENV_DIR)"
 
-install-deps: venv ## Install build dependencies
+install-deps: venv ## Install build dependencies with uv
 	@echo "[info] Installing build dependencies"
-	$(PIP) install nanobind scikit-build-core[pyproject]
+	@$(UV) pip install --python "$(PYTHON)" nanobind "scikit-build-core[pyproject]"
 
 # ==============================================================================
 ## Build System
@@ -133,7 +138,7 @@ dev-install: build venv ## Install package in development mode with all dependen
 	@echo "[info] Installing development environment"
 	@mkdir -p qss
 	@cp -f build/python/qss/_qss.*.so qss/ || true
-	@$(PIP) install -e ".[dev,test,docs]"
+	@$(UV) pip install --python "$(PYTHON)" -e ".[dev,test,docs]"
 	@echo "[info] Development environment ready!"
 	@echo "      Activate with: source $(VENV_DIR)/bin/activate"
 
@@ -327,11 +332,11 @@ precommit-ci: venv ## Run pre-commit in CI mode (fail on errors)
 ## Documentation
 # ==============================================================================
 
-docs: ## Build all documentation (Sphinx + Doxygen)
+docs: venv ## Build all documentation (Sphinx + Doxygen)
 	@echo "[info] Building documentation"
 	@mkdir -p "$(BUILD_DIR)/docs"
 	@echo "[info] Installing documentation dependencies"
-	@$(PIP) install -q -r docs/requirements.txt
+	@$(UV) pip install --python "$(PYTHON)" -r docs/requirements.txt
 	@if [ -f docs/Doxyfile ]; then \
         doxygen docs/Doxyfile; \
     fi
