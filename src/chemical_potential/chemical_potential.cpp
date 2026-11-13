@@ -114,6 +114,56 @@ namespace
         }
         if (std::isfinite(R.mu))
             R.error = std::abs(f(R.mu));
+
+        // An incompressible filling is an exact root on a whole interval, and the
+        // bracket search returns one endpoint of that interval. Use the midpoint
+        // so mu stays continuous as U opens the gap.
+        if (R.converged && std::isfinite(R.mu))
+        {
+            const double atol = std::max(opts.root.abs_tol, 0.0);
+            auto on_plateau = [&](double x) {
+                const double value = f(x);
+                return std::isfinite(value) && std::abs(value) <= atol;
+            };
+            if (on_plateau(R.mu))
+            {
+                auto edge = [&](double direction) {
+                    double inside = R.mu;
+                    double outside = R.mu;
+                    double step = 0.25;
+                    for (int i = 0; i < 40; ++i)
+                    {
+                        const double trial = inside + direction * step;
+                        if (!on_plateau(trial))
+                        {
+                            outside = trial;
+                            break;
+                        }
+                        inside = trial;
+                        outside = trial;
+                        step *= 1.5;
+                    }
+                    if (inside == outside)
+                        return inside;
+                    for (int i = 0; i < 30; ++i)
+                    {
+                        const double mid = 0.5 * (inside + outside);
+                        if (on_plateau(mid))
+                            inside = mid;
+                        else
+                            outside = mid;
+                    }
+                    return inside;
+                };
+                const double left = edge(-1.0);
+                const double right = edge(1.0);
+                if (right > left)
+                {
+                    R.mu = 0.5 * (left + right);
+                    R.error = std::abs(f(R.mu));
+                }
+            }
+        }
         return R;
     }
 } // namespace

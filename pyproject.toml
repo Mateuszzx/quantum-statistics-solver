@@ -42,17 +42,20 @@ classifiers = [
 
 # Runtime dependencies (minimal, required for package to work)
 dependencies = [
+    "nanobind>=3.1.0",
     "numpy>=2.3.4",
     "pandas>=2.3.3",
+    "pip>=26.3",
     "pyyaml>=6.0.3",
+    "scikit-build-core>=1.1.2",
     "scipy>=1.17.1",
 ]
 
 # ------------------------------------------------------------------------------
 # Optional Dependencies
 # ------------------------------------------------------------------------------
-# Install with: pip install quantum-statistics-solver[dev]
-#           or: pip install -e ".[dev,test,docs]"
+# Install with: uv pip install --python .venv/bin/python "qss[dev]"
+#           or: uv pip install --python .venv/bin/python -e ".[dev,test,docs]"
 
 [project.optional-dependencies]
 # Test dependencies (pytest and coverage tools)
