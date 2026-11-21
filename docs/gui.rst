@@ -1,6 +1,10 @@
 GUI (Streamlit)
 ===============
 
+If you use QSS (library or GUI) in published work, please cite
+Kuterba, Wójcik \& Spałek, arXiv:2611.26489 — see ``CITATION.cff``,
+``docs/references.bib``, and the *Citing* section of the project README.
+
 The Streamlit application entry point is ``gui/web_app.py``. Views and widgets live in
 separate modules under ``gui/`` (see :ref:`gui-layout` below).
 

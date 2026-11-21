@@ -28,6 +28,10 @@ def main() -> None:
         "Notebook-equivalent sweeps and BZ distributions — "
         f"project root: `{SOLVER_ROOT}`"
     )
+    st.sidebar.caption(
+        "Please cite: Kuterba, Wójcik & Spałek, arXiv:2611.26489 "
+        "(README)."
+    )
     st.sidebar.header("Quantum statistics solver")
     view = st.sidebar.radio(
         "View",
