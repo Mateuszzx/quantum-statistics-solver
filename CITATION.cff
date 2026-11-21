@@ -1,0 +1,44 @@
+# This CITATION.cff file describes how to cite this software and the related paper.
+# GitHub shows a “Cite this repository” button when this file is present.
+# Spec: https://citation-file-format.github.io/
+
+cff-version: 1.2.0
+message: >-
+  If you use Quantum Statistics Solver (QSS) in academic work, please cite
+  both this software and the accompanying article (see preferred-citation).
+type: software
+title: Quantum Statistics Solver
+abstract: >-
+  High-performance library and Streamlit GUI for quantum statistics
+  calculations (chemical potential, thermodynamics, distributions).
+authors:
+  - family-names: Wójcik
+    given-names: Mateusz
+    email: mateuszwojcikv@gmail.com
+  - family-names: Kuterba
+    given-names: Piotr
+  - family-names: Spałek
+    given-names: Józef
+license: MIT
+repository-code: https://github.com/Mateuszzx/quantum-statistics-solver
+# version: "0.1.0"
+# date-released: "YYYY-MM-DD"
+
+preferred-citation:
+  type: article
+  title: >-
+    Nonstandard quantum statistics for strongly correlated systems:
+    Superexclusion in momentum space and comparison with exact results
+  authors:
+    - family-names: Kuterba
+      given-names: Piotr
+    - family-names: Wójcik
+      given-names: Mateusz
+    - family-names: Spałek
+      given-names: Józef
+  year: 2026
+  url: "https://arxiv.org/abs/2611.26489"
+  identifiers:
+    - type: other
+      value: "arXiv:2611.26489 [cond-mat.str-el]"
+      description: arXiv preprint
