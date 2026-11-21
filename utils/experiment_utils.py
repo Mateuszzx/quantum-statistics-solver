@@ -59,7 +59,7 @@ def _resolve_solver_opts(solver: str, solver_opts: SolverOptsInput | None) -> So
     raise ValueError(f"Unknown solver: {solver}")
 
 
-def run_experiment(  # noqa: PLR0913
+def run_experiment(  # noqa: PLR0912, PLR0913
     n_vals: Sequence[float] | None = None,
     kBT_vals: Sequence[float] = (),
     h_a_vals: Sequence[float] = (),
@@ -96,7 +96,7 @@ def run_experiment(  # noqa: PLR0913
     logs_path = Path(logs_dir)
     logs_path.mkdir(parents=True, exist_ok=True)
 
-    U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
+    U_iter = [float(U_vals)] if isinstance(U_vals, int | float) else list(U_vals)
     sweep_vals = list(mu_vals) if prescribe_mu else list(n_vals)  # type: ignore[arg-type]
     results: list[pd.DataFrame] = []
     total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(sweep_vals) * len(U_iter)

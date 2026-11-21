@@ -199,6 +199,7 @@ select = [
 # Ignore specific rules
 ignore = [
     "E501",    # line too long (handled by black)
+    "ANN401",  # dynamically typed Any (allowed in a few APIs)
     "S101",    # use of assert (needed for pytest)
     "COM812",  # trailing comma (conflicts with formatter)
     "ISC001",  # implicit string concat (conflicts with formatter)

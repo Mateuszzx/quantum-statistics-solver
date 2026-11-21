@@ -29,7 +29,7 @@ def _coerce_native_distro(d: _qss.DistType | PyDistType | str) -> _qss.DistType:
 
 def _dist_label(d: _qss.DistType | PyDistType | str) -> str:
     """Get string label for distribution type."""
-    if isinstance(d, (_qss.DistType, PyDistType)):
+    if isinstance(d, _qss.DistType | PyDistType):
         return d.name
     return str(d).upper()
 
@@ -113,12 +113,12 @@ def chemical_potential(  # noqa: PLR0913, PLR0912, PLR0915
     """
     if E is None:
         raise ValueError("E (energy matrix) is required")
-    if isinstance(distros, (str, _qss.DistType, PyDistType)):
+    if isinstance(distros, str | _qss.DistType | PyDistType):
         distro_iter = [distros]
     else:
         distro_iter = list(distros)
 
-    U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
+    U_iter = [float(U_vals)] if isinstance(U_vals, int | float) else list(U_vals)
 
     # Validate energy matrix
     if E.ndim != 2 or E.shape[0] != E.shape[1]:
