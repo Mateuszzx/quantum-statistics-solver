@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
@@ -58,7 +58,7 @@ def band_filling_from_mu(  # noqa: PLR0913
     return float(np.mean(np.abs(total)))
 
 
-def chemical_potential(  # noqa: PLR0913, PLR0912
+def chemical_potential(  # noqa: PLR0913, PLR0912, PLR0915
     distros: Sequence[PyDistType | _qss.DistType | str],
     n_vals: Sequence[float] | None = None,
     kBT_vals: Sequence[float] = (),
@@ -137,6 +137,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
     index_keys = []
 
     if prescribe_mu:
+        prescribed = list(mu_vals or ())
         for distro in distro_iter:
             for kBT_val in kBT_vals:
                 kBT_f = float(kBT_val)
@@ -144,7 +145,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
                     h_f = float(h_val)
                     for u_val in U_iter:
                         u_f = float(u_val)
-                        for mu_val in mu_vals:  # type: ignore[union-attr]
+                        for mu_val in prescribed:
                             mu_f = float(mu_val)
                             n_f = band_filling_from_mu(
                                 E,
@@ -191,6 +192,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
             solver_opts_native = _qss.CombinedSolverOptions()
             solver_opts_native.root = native
 
+    n_list = list(n_vals or ())
     # Loop over all parameter combinations
     for distro in distro_iter:
         native_dist = _coerce_native_distro(distro)
@@ -204,7 +206,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
                     results = _qss.chemical_potential_B_multi_n(
                         native_dist,
                         kBT_f,
-                        n_vals,
+                        n_list,
                         N_eff,
                         E,
                         h_f,
@@ -216,7 +218,7 @@ def chemical_potential(  # noqa: PLR0913, PLR0912
                         float(b0),
                         float(x0),
                     )
-                    for n_val, (mu, iters, conv, err) in zip(n_vals, results):  # type: ignore[arg-type]
+                    for n_val, (mu, iters, conv, err) in zip(n_list, results, strict=True):
                         records.append(
                             {
                                 "mu": float(mu),
