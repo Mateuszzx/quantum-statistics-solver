@@ -61,6 +61,7 @@ SRC_FILES := $(shell find $(SRC_DIR) -type f \( -name '*.c' -o -name '*.cpp' -o 
         typecheck-python codespell codespell-fix \
         check-python check-all fix-python \
         docs docs-clean docs-serve \
+        gui-launch \
         precommit-install precommit-run precommit-ci
 
 # ==============================================================================
@@ -171,9 +172,9 @@ test-python: venv ## Run Python tests with pytest
 ## GUI
 # ==============================================================================
 
-gui-launch: ## Launch the GUI application
+gui-launch: venv ## Launch the GUI application (via uv)
 	@echo "[info] Launching Quantum Statistics Solver GUI"
-	@streamlit run ./gui/web_app.py
+	@$(UV) run streamlit run ./gui/web_app.py
 # ==============================================================================
 ## Code Coverage
 # ==============================================================================
