@@ -47,6 +47,15 @@ solver:
 # Experiment parameter sweeps (Panels sidebar)
 sweeps:
   grid_points_max: 500
+  # When true, prescribe μ and skip μ(n) root solve (n is computed from occupancy).
+  prescribe_mu: false
+  mu:
+    scalar: 0.0
+    list: "-2.0, -1.0, 0.0, 1.0, 2.0"
+    grid_min: -2.0
+    grid_max: 2.0
+    grid_points: 21
+    mode: Scalar  # Scalar = constant-μ panels; Linspace/List to sweep μ
   n:
     scalar: 0.5
     list: "0.1, 0.3, 0.5, 0.7, 0.9"
@@ -97,6 +106,8 @@ plot:
   y_max: 1.0
 
 distributions_view:
+  prescribe_mu: false
+  mu: 0.0
   n:
     value: 0.5
     min: 0.001

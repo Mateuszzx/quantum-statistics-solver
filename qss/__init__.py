@@ -7,7 +7,7 @@ try:
     from . import _qss  # type: ignore[attr-defined]
 except ImportError as e:
     raise ImportError("The _qss extension module is not available.") from e
-from .chemical_potential import chemical_potential
+from .chemical_potential import band_filling_from_mu, chemical_potential
 from .distributions import DistType, prepare_2D_lattice_data
 from .energy import energy
 from .entropy import entropy
@@ -27,6 +27,7 @@ __all__ = [
     "DistType",
     "SolverType",
     "_qss",
+    "band_filling_from_mu",
     "brent_defaults",
     "chemical_potential",
     "energy",

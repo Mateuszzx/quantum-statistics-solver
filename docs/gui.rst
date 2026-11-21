@@ -58,11 +58,12 @@ Workflow:
 
 1. Configure **Lattice**, **Distributions**, and **Experiment parameters** in the
    sidebar (each sweep variable is in a collapsed expander by default).
-2. Optionally open **Solver parameters** (collapsed expander): Brent or simulated
-   annealing, brackets, and algorithm-specific options.
+2. Optionally enable **Prescribe μ** to skip the μ(n) root solve and sweep μ
+   directly (band filling *n* is then computed from occupancy). Otherwise open
+   **Solver parameters** (collapsed expander): Brent or simulated annealing.
 3. Click **Run experiment**.
 4. Choose **Quantity**, **X axis variable**, **X scale** (linear / log), and **Sweep in
-   panels**; fix the remaining sweep variables.
+   panels**; fix the remaining sweep variables (includes μ when prescribed).
 5. Adjust **Plot style** (figure size, panels per row, optional axis limits).
 
 Panel line colors and styles follow the same palette as ``tools/scientific_plot_v2.py``

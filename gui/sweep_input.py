@@ -15,6 +15,7 @@ SWEEP_MODES = ("Scalar", "List", "Linspace", "Logspace")
 
 _SWEEP_LABELS: dict[str, str] = {
     "n": r"**Band filling** $n$",
+    "mu": r"**Chemical potential** $\mu / |t|$",
     "k_BT": r"**Temperature** $k_B T / |t|$",
     "H_a": r"**Field** $H_a$ (T)",
     "U": r"**Hubbard** $U / |t|$",
@@ -56,9 +57,10 @@ def _sweep_spec_from_yaml(key: str) -> SweepParamSpec:
     )
 
 
-def panel_sweep_specs() -> dict[str, SweepParamSpec]:
+def panel_sweep_specs(*, prescribe_mu: bool = False) -> dict[str, SweepParamSpec]:
     """Sweep specs built from ``defaults.yaml``."""
-    return {key: _sweep_spec_from_yaml(key) for key in ("n", "k_BT", "H_a", "U")}
+    keys = ("mu", "k_BT", "H_a", "U") if prescribe_mu else ("n", "k_BT", "H_a", "U")
+    return {key: _sweep_spec_from_yaml(key) for key in keys}
 
 
 def parameter_input(
@@ -138,18 +140,26 @@ def parameter_input(
 
 def experiment_parameter_sweeps(
     container: st.delta_generator.DeltaGenerator,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
-    """Configure n, k_BT, H_a, and U sweeps for the Panels experiment."""
-    specs = panel_sweep_specs()
+    *,
+    prescribe_mu: bool = False,
+) -> dict[str, NDArray[np.float64]]:
+    """Configure experiment sweeps; keys are ``n`` or ``mu``, plus ``k_BT``, ``H_a``, ``U``."""
+    specs = panel_sweep_specs(prescribe_mu=prescribe_mu)
     grid_max = int(cfg("sweeps", "grid_points_max"))
     sweeps: dict[str, NDArray[np.float64]] = {}
+    title_map = {
+        "n": "n",
+        "mu": r"$\mu/|t|$",
+        "k_BT": r"$k_B T/|t|$",
+        "H_a": "H_a",
+        "U": "U",
+    }
     for key, spec in specs.items():
-        title = key if key != "k_BT" else r"$k_B T/|t|$"
-        with container.expander(title, expanded=False) as exp:
+        with container.expander(title_map.get(key, key), expanded=False) as exp:
             sweeps[key] = parameter_input(
                 param_key=f"sweep_{key}",
                 spec=spec,
                 container=exp,
                 grid_points_max=grid_max,
             )
-    return sweeps["n"], sweeps["k_BT"], sweeps["H_a"], sweeps["U"]
+    return sweeps

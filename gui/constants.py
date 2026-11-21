@@ -18,6 +18,7 @@ DIST_MAP: dict[str, DistType] = {
 
 SWEEP_VAR_LABELS: dict[str, str] = {
     "n": r"$n$",
+    "mu": r"$\mu/|t|$",
     "k_BT": r"$k_B T/|t|$",
     "H_a": r"$H_a$",
     "U": r"$U/|t|$",

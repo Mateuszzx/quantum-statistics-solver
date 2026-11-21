@@ -14,6 +14,7 @@ from gui.scientific_plot import ScientificPlotter
 from gui.sidebar_controls import sidebar_distros, sidebar_lattice
 from gui.streamlit_utils import show_current_figure
 from gui.sweep_grids import parse_float_list
+from qss.chemical_potential import band_filling_from_mu
 
 
 def view_distributions() -> None:  # noqa: PLR0912, PLR0915
@@ -23,17 +24,29 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
 
     st.sidebar.subheader("State point")
     dv = cfg("distributions_view")
-    n_cfg = dv["n"]
-    n_val = float(
-        st.sidebar.number_input(
-            r"Band filling $n$",
-            min_value=float(n_cfg["min"]),
-            max_value=float(n_cfg["max"]),
-            value=float(n_cfg["value"]),
-            step=float(n_cfg["step"]),
-            key="dist_n",
-        )
+    prescribe_mu = st.sidebar.checkbox(
+        r"Prescribe $\mu$ (skip $\mu(n)$ solve)",
+        value=bool(dv["prescribe_mu"]),
+        key="dist_prescribe_mu",
     )
+    n_cfg = dv["n"]
+    n_val: float | None = None
+    mu_input: float | None = None
+    if prescribe_mu:
+        mu_input = float(
+            st.sidebar.number_input(r"$\mu / |t|$", value=float(dv["mu"]), key="dist_mu")
+        )
+    else:
+        n_val = float(
+            st.sidebar.number_input(
+                r"Band filling $n$",
+                min_value=float(n_cfg["min"]),
+                max_value=float(n_cfg["max"]),
+                value=float(n_cfg["value"]),
+                step=float(n_cfg["step"]),
+                key="dist_n",
+            )
+        )
     kbt = float(st.sidebar.number_input(r"$k_B T / |t|$", value=float(dv["k_BT"]), key="dist_kbt"))
     h_a = float(st.sidebar.number_input(r"$H_a$ (T)", value=float(dv["H_a"]), key="dist_ha"))
     u_val = float(st.sidebar.number_input(r"$U / |t|$", value=float(dv["U"]), key="dist_u"))
@@ -46,11 +59,18 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
     distro_names = [d.name if hasattr(d, "name") else str(d).split(".")[-1] for d in distros]
 
     st.header("Distributions")
-    st.caption(
-        "Occupancy and BZ cuts from lattice + $(n, k_B T, H_a, U)$; "
-        r"$\mu$ is solved from $n$ for each distribution. "
-        "Does not use panel experiment results."
-    )
+    if prescribe_mu:
+        st.caption(
+            r"Occupancy from lattice + $(\mu, k_B T, H_a, U)$; "
+            r"band filling $n$ is computed from occupancy. "
+            "Does not use panel experiment results."
+        )
+    else:
+        st.caption(
+            "Occupancy and BZ cuts from lattice + $(n, k_B T, H_a, U)$; "
+            r"$\mu$ is solved from $n$ for each distribution. "
+            "Does not use panel experiment results."
+        )
 
     if dim != "2D":
         st.warning(
@@ -60,21 +80,38 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
 
     st.subheader("Occupancy map / 1D cut")
     d_pick = st.selectbox("Distribution", options=distro_names, index=0, key="dist_d_pick")
-    mu, mu_err = solve_mu_from_n(
-        e_k=e_k,
-        distro=str(d_pick),
-        n=n_val,
-        kbt=kbt,
-        h_a=h_a,
-        u=u_val,
-    )
+    mu: float | None
+    mu_err: str | None = None
+    if prescribe_mu:
+        assert mu_input is not None
+        mu = float(mu_input)
+        n_val = band_filling_from_mu(
+            e_k, mu=mu, kBT=kbt, H_a=h_a, distro=str(d_pick), U=u_val
+        )
+    else:
+        assert n_val is not None
+        mu, mu_err = solve_mu_from_n(
+            e_k=e_k,
+            distro=str(d_pick),
+            n=n_val,
+            kbt=kbt,
+            h_a=h_a,
+            u=u_val,
+        )
     if mu is None:
         st.error(f"Could not solve μ for **{d_pick}**: {mu_err}")
     else:
-        st.caption(
-            f"Solved μ / |t| = **{mu:.6g}** for n = {n_val:.6g}, "
-            f"k_BT = {kbt:.6g}, H_a = {h_a:.6g}, U = {u_val:.6g}."
-        )
+        assert n_val is not None
+        if prescribe_mu:
+            st.caption(
+                f"Prescribed μ / |t| = **{mu:.6g}** → n = {n_val:.6g}, "
+                f"k_BT = {kbt:.6g}, H_a = {h_a:.6g}, U = {u_val:.6g}."
+            )
+        else:
+            st.caption(
+                f"Solved μ / |t| = **{mu:.6g}** for n = {n_val:.6g}, "
+                f"k_BT = {kbt:.6g}, H_a = {h_a:.6g}, U = {u_val:.6g}."
+            )
         spin_choice = st.radio(
             "Spin channel",
             ["up (+1)", "down (-1)", "nkd"],
@@ -97,7 +134,7 @@ def view_distributions() -> None:  # noqa: PLR0912, PLR0915
             spin_choice=spin_choice,
         )
 
-    if dim == "2D" and ky is not None:
+    if dim == "2D" and ky is not None and not prescribe_mu:
         st.divider()
         st.subheader("1D BZ cuts")
         st.caption(

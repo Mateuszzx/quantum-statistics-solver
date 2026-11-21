@@ -60,11 +60,11 @@ def _resolve_solver_opts(solver: str, solver_opts: SolverOptsInput | None) -> So
 
 
 def run_experiment(  # noqa: PLR0913
-    n_vals: Sequence[float],
-    kBT_vals: Sequence[float],
-    h_a_vals: Sequence[float],
-    distros: Sequence[DistType],
-    e_k: NDArray[object],
+    n_vals: Sequence[float] | None = None,
+    kBT_vals: Sequence[float] = (),
+    h_a_vals: Sequence[float] = (),
+    distros: Sequence[DistType] = (),
+    e_k: NDArray[object] | None = None,
     N: int = 100,
     solver: str = "SA",
     solver_opts: SolverOptsInput | None = None,
@@ -75,25 +75,31 @@ def run_experiment(  # noqa: PLR0913
     b0: float = 10.0,
     U_vals: Sequence[float] | float = 0.0,
     progress: Callable[[int, int], None] | None = None,
+    mu_vals: Sequence[float] | None = None,
 ) -> pd.DataFrame:
     """
-    Run ``chemical_potential`` for a Cartesian grid of (distro, k_B T, H_a, u, n).
+    Run ``chemical_potential`` for a Cartesian grid of (distro, k_B T, H_a, u, n|μ).
 
-    Parameters
-    ----------
-    n_vals, kBT_vals, h_a_vals, U_vals
-        Sweeps in band filling, temperature k_B T / |t|, magnetic field (Tesla), and U parameter.
-    progress
-        Optional ``progress(done, total)`` callback (e.g. Streamlit progress bar).
+    Pass either *n_vals* (solve μ from band filling) or *mu_vals* (prescribe μ and
+    skip the root solve). When *mu_vals* is set, solver options are unused.
     """
-    native_opts = _resolve_solver_opts(solver, solver_opts)
+    if e_k is None:
+        raise ValueError("e_k is required")
+    if mu_vals is not None and n_vals is not None:
+        raise ValueError("Pass either n_vals or mu_vals, not both.")
+    if mu_vals is None and n_vals is None:
+        raise ValueError("Either n_vals or mu_vals must be provided.")
+
+    prescribe_mu = mu_vals is not None
+    native_opts = None if prescribe_mu else _resolve_solver_opts(solver, solver_opts)
 
     logs_path = Path(logs_dir)
     logs_path.mkdir(parents=True, exist_ok=True)
 
     U_iter = [float(U_vals)] if isinstance(U_vals, (int, float)) else list(U_vals)
+    sweep_vals = list(mu_vals) if prescribe_mu else list(n_vals)  # type: ignore[arg-type]
     results: list[pd.DataFrame] = []
-    total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(n_vals) * len(U_iter)
+    total = len(distros) * len(kBT_vals) * len(h_a_vals) * len(sweep_vals) * len(U_iter)
     done = 0
 
     with tqdm(total=total, desc="Simulations", disable=progress is not None) as pbar:
@@ -101,33 +107,45 @@ def run_experiment(  # noqa: PLR0913
             for kbt in kBT_vals:
                 for h in h_a_vals:
                     for u_val in U_iter:
-                        for n_val in n_vals:
+                        for sweep_val in sweep_vals:
                             try:
-                                rnd = uuid.uuid4().hex[:6]
-                                dist_name = str(d).split(".")[-1]
-                                log_fn = (
-                                    logs_path
-                                    / f"log_{solver.lower()}_{dist_name}_kbt{kbt:.4g}_n{n_val:.4g}_H{h:.4g}_U{u_val:.4g}_{rnd}.csv"
-                                )
-                                _set_log_path(native_opts, str(log_fn))
-
-                                res_df = chemical_potential(
-                                    distros=[d],
-                                    n_vals=[float(n_val)],
-                                    kBT_vals=[float(kbt)],
-                                    H_a_vals=[float(h)],
-                                    N=int(N),
-                                    E=e_k,
-                                    U_vals=[float(u_val)],
-                                    solver_opts=native_opts,
-                                    x0=float(x0),
-                                    a0=float(a0),
-                                    b0=float(b0),
-                                )
+                                if prescribe_mu:
+                                    res_df = chemical_potential(
+                                        distros=[d],
+                                        mu_vals=[float(sweep_val)],
+                                        kBT_vals=[float(kbt)],
+                                        H_a_vals=[float(h)],
+                                        N=int(N),
+                                        E=e_k,
+                                        U_vals=[float(u_val)],
+                                    )
+                                else:
+                                    rnd = uuid.uuid4().hex[:6]
+                                    dist_name = str(d).split(".")[-1]
+                                    log_fn = (
+                                        logs_path
+                                        / f"log_{solver.lower()}_{dist_name}_kbt{kbt:.4g}_n{sweep_val:.4g}_H{h:.4g}_U{u_val:.4g}_{rnd}.csv"
+                                    )
+                                    assert native_opts is not None
+                                    _set_log_path(native_opts, str(log_fn))
+                                    res_df = chemical_potential(
+                                        distros=[d],
+                                        n_vals=[float(sweep_val)],
+                                        kBT_vals=[float(kbt)],
+                                        H_a_vals=[float(h)],
+                                        N=int(N),
+                                        E=e_k,
+                                        U_vals=[float(u_val)],
+                                        solver_opts=native_opts,
+                                        x0=float(x0),
+                                        a0=float(a0),
+                                        b0=float(b0),
+                                    )
                                 results.append(res_df)
                             except Exception as e:
+                                tag = "mu" if prescribe_mu else "n"
                                 print(
-                                    f"\nError for: {d}, n={n_val}, kBT={kbt}, H={h}, U={u_val}\nDetails: {e}"
+                                    f"\nError for: {d}, {tag}={sweep_val}, kBT={kbt}, H={h}, U={u_val}\nDetails: {e}"
                                 )
                             done += 1
                             pbar.update(1)

@@ -42,6 +42,7 @@ def panel_plot(  # noqa: PLR0913, PLR0912, PLR0915
 
     latex_var: dict[str, str] = {
         "n": r"$n$",
+        "mu": r"$\mu/|t|$",
         "k_BT": r"$k_B T/|t|$",
         "H_a": r"$H_a$ (T)",
         "U": r"$U/|t|$",
